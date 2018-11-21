@@ -1,8 +1,13 @@
 package array;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public class Lists {
+	
+	public static <T> List<T> subList(List<T> list, int beginIndex, int endIndex) {
+		return subList(list, beginIndex, endIndex, new ArrayList<T>(endIndex-beginIndex));
+	}
 
 	// inc, exclusive
 	public static <T> List<T> subList(List<T> list, int beginIndex, int endIndex, List<T> newList) {

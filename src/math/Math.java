@@ -29,4 +29,9 @@ public class Math {
 	public static long nCr(long n, long r) {
 		return (intFactorial(n)) / (intFactorial(r) * intFactorial(n - r));
 	}
+
+	public static long nPr(long n, long r) {
+		return (intFactorial(n)) / intFactorial(n - r);
+	}
+
 }

@@ -23,7 +23,7 @@ public class CAS {
 	}
 
 	public Expression parseExpression(String str) {
-		return null;
+		return new Expression(this, str);
 	}
 
 	public void registerFunction(String funcName, Class<? extends Function> funcClass) {
