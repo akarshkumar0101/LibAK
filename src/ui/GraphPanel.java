@@ -78,8 +78,8 @@ public class GraphPanel extends JComponent
 		}
 
 		public void updatePixCoordinate() {
-			pixx = (int) math.Math.scale(valx, param.minx, param.maxx, 0, getWidth());
-			pixy = (int) math.Math.scale(valy, param.miny, param.maxy, getHeight(), 0);
+			pixx = (int) math.AKMath.scale(valx, param.minx, param.maxx, 0, getWidth());
+			pixy = (int) math.AKMath.scale(valy, param.miny, param.maxy, getHeight(), 0);
 		}
 
 		@Override
@@ -129,8 +129,8 @@ public class GraphPanel extends JComponent
 
 		if (param.showaxis) {
 			// pixels
-			int actualcenterx = (int) math.Math.scale(0, param.minx, param.maxx, 0, getWidth());
-			int actualcentery = (int) math.Math.scale(0, param.miny, param.maxy, getHeight(), 0);
+			int actualcenterx = (int) math.AKMath.scale(0, param.minx, param.maxx, 0, getWidth());
+			int actualcentery = (int) math.AKMath.scale(0, param.miny, param.maxy, getHeight(), 0);
 
 			g.drawLine(actualcenterx, 0, actualcenterx, getHeight());
 			g.drawLine(0, actualcentery, getWidth(), actualcentery);
@@ -149,8 +149,8 @@ public class GraphPanel extends JComponent
 
 				double[] point = pointSet.getPoints()[i];
 				// pixels
-				int px = (int) math.Math.scale(point[0], param.minx, param.maxx, 0, getWidth());
-				int py = (int) math.Math.scale(point[1], param.miny, param.maxy, getHeight(), 0);
+				int px = (int) math.AKMath.scale(point[0], param.minx, param.maxx, 0, getWidth());
+				int py = (int) math.AKMath.scale(point[1], param.miny, param.maxy, getHeight(), 0);
 
 				if (pointSet.getPointColor() != null) {
 					int pointWidth = 10;
@@ -301,8 +301,8 @@ public class GraphPanel extends JComponent
 
 	@Override
 	public void mouseMoved(MouseEvent e) {
-		double unitx = math.Math.scale(e.getX(), 0, getWidth(), param.minx, param.maxx);
-		double unity = math.Math.scale(e.getY(), getHeight(), 0, param.miny, param.maxy);
+		double unitx = math.AKMath.scale(e.getX(), 0, getWidth(), param.minx, param.maxx);
+		double unity = math.AKMath.scale(e.getY(), getHeight(), 0, param.miny, param.maxy);
 
 		updateUnitRangeCheck();
 		for (UIPointSet pointSet : pointSets) {
@@ -313,8 +313,8 @@ public class GraphPanel extends JComponent
 					mBox.valy = pointSet.getPoints()[i][1];
 					// cant just use e.getx/y b/c it moves the with the cursor,
 					// try it
-					mBox.pixx = (int) math.Math.scale(mBox.valx, param.minx, param.maxx, 0, getWidth());
-					mBox.pixy = (int) math.Math.scale(mBox.valy, param.miny, param.maxy, getHeight(), 0);
+					mBox.pixx = (int) math.AKMath.scale(mBox.valx, param.minx, param.maxx, 0, getWidth());
+					mBox.pixy = (int) math.AKMath.scale(mBox.valy, param.miny, param.maxy, getHeight(), 0);
 					mBox.pointSet = pointSet;
 					showmBox = true;
 					showmBoxPrev = true;

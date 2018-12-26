@@ -10,7 +10,7 @@ public class Threading {
 		}
 	}
 
-	public Thread newThread(Runnable run, boolean startInstantly) {
+	public static Thread newThread(Runnable run, boolean startInstantly) {
 		Thread thread = new Thread(run);
 		if (startInstantly) {
 			thread.start();
@@ -18,10 +18,10 @@ public class Threading {
 		return thread;
 	}
 
-	public Thread[] newThreads(Runnable[] runs, boolean startInstantly) {
+	public static Thread[] newThreads(Runnable[] runs, boolean startInstantly) {
 		Thread[] threads = new Thread[runs.length];
 		for (int i = 0; i < runs.length; i++) {
-			threads[i] = newThread(runs[i], startInstantly);
+			threads[i] = Threading.newThread(runs[i], startInstantly);
 		}
 		return threads;
 	}

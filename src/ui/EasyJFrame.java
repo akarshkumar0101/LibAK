@@ -10,10 +10,9 @@ public class EasyJFrame extends JFrame {
 		super(title);
 		this.setSize(width, height);
 		if (closeOnX) {
-			setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+			this.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		}
-		if (showImmediately) {
-			setVisible(false);
-		}
+		this.setVisible(showImmediately);
+
 	}
 }
