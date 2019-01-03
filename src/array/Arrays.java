@@ -15,25 +15,25 @@ public class Arrays {
 	}
 
 	public static <T> boolean contains(T[] array, T element) {
-		return contains(array, element, false);
+		return Arrays.contains(array, element, false);
 	}
 
-	public static <T> boolean contains(T[] array, T element, boolean identical) {
+	public static <T> boolean contains(T[] array, T element, boolean canEqual) {
 		for (T e : array) {
-			if (Data.satisfiesEquavilance(e, element, identical))
+			if (Data.equals(e, element, canEqual))
 				return true;
 		}
 		return false;
 	}
 
 	public static <T> int numberOf(T[] array, T element) {
-		return numberOf(array, element, false);
+		return Arrays.numberOf(array, element, false);
 	}
 
-	public static <T> int numberOf(T[] array, T element, boolean identical) {
+	public static <T> int numberOf(T[] array, T element, boolean canEqual) {
 		int num = 0;
 		for (T e : array) {
-			if (Data.satisfiesEquavilance(e, element, identical)) {
+			if (Data.equals(e, element, canEqual)) {
 				num++;
 			}
 		}
@@ -41,12 +41,12 @@ public class Arrays {
 	}
 
 	public static <T> int indexOf(T[] array, T element) {
-		return indexOf(array, element, false);
+		return Arrays.indexOf(array, element, false);
 	}
 
-	public static <T> int indexOf(T[] array, T element, boolean identical) {
+	public static <T> int indexOf(T[] array, T element, boolean canEqual) {
 		for (int i = 0; i < array.length; i++) {
-			if (Data.satisfiesEquavilance(array[i], element, identical))
+			if (Data.equals(array[i], element, canEqual))
 				return i;
 		}
 
@@ -58,14 +58,14 @@ public class Arrays {
 		for (int i = 0; i < array.length; i++) {
 			newarray[i] = array[i];
 		}
-		newarray[lastIndex(newarray)] = element;
+		newarray[Arrays.lastIndex(newarray)] = element;
 		return newarray;
 	}
 
 	public static <T> T[] remove(T[] array, T element) {
-		T[] newarray = java.util.Arrays.copyOf(array, array.length - numberOf(array, element));
+		T[] newarray = java.util.Arrays.copyOf(array, array.length - Arrays.numberOf(array, element));
 		for (int i = 0, newi = 0; newi < newarray.length; i++, newi++) {
-			if (Data.satisfiesEquavilance(array[i], element, false)) {
+			if (Data.equals(array[i], element, true)) {
 				i++;
 			}
 			newarray[newi] = array[i];
@@ -114,7 +114,7 @@ public class Arrays {
 	public static <E> E[][] sliceArray(E[][] array, int from1, int to1, int from2, int to2) {
 		E[][] newarray = java.util.Arrays.copyOfRange(array, from1, to1);
 		for (int i = 0; i < newarray.length; i++) {
-			newarray[i] = sliceArray(array[i], from2, to2);
+			newarray[i] = Arrays.sliceArray(array[i], from2, to2);
 		}
 		return newarray;
 	}
@@ -122,7 +122,7 @@ public class Arrays {
 	public static <E> E[][][] sliceArray(E[][][] array, int from1, int to1, int from2, int to2, int from3, int to3) {
 		E[][][] newarray = java.util.Arrays.copyOfRange(array, from1, to1);
 		for (int i = 0; i < newarray.length; i++) {
-			newarray[i] = sliceArray(array[i], from2, to2, from3, to3);
+			newarray[i] = Arrays.sliceArray(array[i], from2, to2, from3, to3);
 		}
 		return newarray;
 	}
@@ -138,7 +138,7 @@ public class Arrays {
 	public static <E> E[][] newArrayOfSameSize(E[][] array, E placeHolder) {
 		array = array.clone();
 		for (int i = 0; i < array.length; i++) {
-			array[i] = newArrayOfSameSize(array[i], placeHolder);
+			array[i] = Arrays.newArrayOfSameSize(array[i], placeHolder);
 		}
 		return array;
 	}
@@ -146,7 +146,7 @@ public class Arrays {
 	public static <E> E[][][] newArrayOfSameSize(E[][][] array, E placeHolder) {
 		array = array.clone();
 		for (int i = 0; i < array.length; i++) {
-			array[i] = newArrayOfSameSize(array[i], placeHolder);
+			array[i] = Arrays.newArrayOfSameSize(array[i], placeHolder);
 		}
 		return array;
 	}
@@ -163,28 +163,25 @@ public class Arrays {
 		return array;
 	}
 
-	public static <E> E[] performFunction(E[] array, Function1D<E, E> function) {
-		array = array.clone();
-		for (int i = 0; i < array.length; i++) {
-			array[i] = function.evaluate(array[i]);
+	public static <X, Y> Y[] performFunction(X[] inarr, Y[] outarr, Function1D<X, Y> function) {
+		for (int i = 0; i < inarr.length; i++) {
+			outarr[i] = function.evaluate(inarr[i]);
 		}
-		return array;
+		return outarr;
 	}
 
-	public static <E> E[][] performFunction(E[][] array, Function1D<E, E> function) {
-		array = array.clone();
-		for (int i = 0; i < array.length; i++) {
-			array[i] = performFunction(array[i], function);
+	public static <X, Y> Y[][] performFunction(X[][] inarr, Y[][] outarr, Function1D<X, Y> function) {
+		for (int i = 0; i < inarr.length; i++) {
+			outarr[i] = Arrays.performFunction(inarr[i], outarr[i], function);
 		}
-		return array;
+		return outarr;
 	}
 
-	public static <E> E[][][] performFunction(E[][][] array, Function1D<E, E> function) {
-		array = array.clone();
-		for (int i = 0; i < array.length; i++) {
-			array[i] = performFunction(array[i], function);
+	public static <X, Y> Y[][][] performFunction(X[][][] inarr, Y[][][] outarr, Function1D<X, Y> function) {
+		for (int i = 0; i < inarr.length; i++) {
+			outarr[i] = Arrays.performFunction(inarr[i], outarr[i], function);
 		}
-		return array;
+		return outarr;
 	}
 
 	public static <A, B, C> C[] performFunction(A[] a, B[] b, Function2D<A, B, C> function, C[] c) {
@@ -196,14 +193,14 @@ public class Arrays {
 
 	public static <A, B, C> C[][] performFunction(A[][] a, B[][] b, Function2D<A, B, C> function, C[][] c) {
 		for (int i = 0; i < c.length; i++) {
-			c[i] = performFunction(a[i], b[i], function, c[i]);
+			c[i] = Arrays.performFunction(a[i], b[i], function, c[i]);
 		}
 		return c;
 	}
 
 	public static <A, B, C> C[][][] performFunction(A[][][] a, B[][][] b, Function2D<A, B, C> function, C[][][] c) {
 		for (int i = 0; i < c.length; i++) {
-			c[i] = performFunction(a[i], b[i], function, c[i]);
+			c[i] = Arrays.performFunction(a[i], b[i], function, c[i]);
 		}
 		return c;
 	}
@@ -224,7 +221,7 @@ class Temp {
 		String str = "{";
 		for (int i = 0; i < arr.length; i++) {
 			double[] a = arr[i];
-			str += toString(a) + ", ";
+			str += Temp.toString(a) + ", ";
 			if (i != arr.length - 1) {
 				str += "\n";
 			}
@@ -236,7 +233,7 @@ class Temp {
 		String str = "[";
 		for (int i = 0; i < arr.length; i++) {
 			double[][] a = arr[i];
-			str += toString(a) + ", ";
+			str += Temp.toString(a) + ", ";
 			if (i != arr.length - 1) {
 				str += "\n";
 			}

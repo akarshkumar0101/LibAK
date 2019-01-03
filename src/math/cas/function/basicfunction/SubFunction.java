@@ -16,17 +16,13 @@ public class SubFunction extends BasicFunction {
 
 	@Override
 	public double evaluate(Map<Variable, Double> variableValues) {
-		return a.evaluate(variableValues) - b.evaluate(variableValues);
+		return this.a.evaluate(variableValues) - this.b.evaluate(variableValues);
 	}
 
 	@Override
 	public Entity partialWithRespectTo(Variable var) {
-		return new SubFunction(cas, Arrays.performFunction(parameters, new Function1D<Entity, Entity>() {
-			@Override
-			public Entity evaluate(Entity a) {
-				return a.partialWithRespectTo(var);
-			}
-		}));
+		return new SubFunction(this.cas, Arrays.performFunction(this.parameters, new Entity[this.parameters.length],
+				(Function1D<Entity, Entity>) a -> a.partialWithRespectTo(var)));
 	}
 
 }

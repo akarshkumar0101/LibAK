@@ -18,17 +18,13 @@ public class AddFunction extends BasicFunction {
 
 	@Override
 	public double evaluate(Map<Variable, Double> variableValues) {
-		return a.evaluate(variableValues) + b.evaluate(variableValues);
+		return this.a.evaluate(variableValues) + this.b.evaluate(variableValues);
 	}
 
 	@Override
 	public Entity partialWithRespectTo(Variable var) {
-		return new AddFunction(cas, Arrays.performFunction(parameters, new Function1D<Entity, Entity>() {
-			@Override
-			public Entity evaluate(Entity a) {
-				return a.partialWithRespectTo(var);
-			}
-		}));
+		return new AddFunction(this.cas, Arrays.performFunction(this.parameters, new Entity[this.parameters.length],
+				(Function1D<Entity, Entity>) a -> a.partialWithRespectTo(var)));
 	}
 
 	@Override
@@ -51,18 +47,18 @@ public class AddFunction extends BasicFunction {
 	}
 
 	private Entity consolidateCheck0s() {
-		if (a.equals(cas.ZERO))
-			return b;
-		else if (b.equals(cas.ZERO))
-			return a;
+		if (this.a.equals(this.cas.ZERO))
+			return this.b;
+		else if (this.b.equals(this.cas.ZERO))
+			return this.a;
 		return null;
 	}
 
 	private Entity consolidateLinearCombination() {
-		Tuple2D<Constant, Entity> scalea = splitScale(a), scaleb = splitScale(b);
+		Tuple2D<Constant, Entity> scalea = this.splitScale(this.a), scaleb = this.splitScale(this.b);
 		if (scalea.getB().equals(scaleb.getB())) {
-			Constant newConst = new Constant(cas, scalea.getA().evaluate(null) + scaleb.getA().evaluate(null));
-			return new MulFunction(cas, newConst, scalea.getB());
+			Constant newConst = new Constant(this.cas, scalea.getA().evaluate(null) + scaleb.getA().evaluate(null));
+			return new MulFunction(this.cas, newConst, scalea.getB());
 		}
 		return null;
 	}
@@ -71,9 +67,9 @@ public class AddFunction extends BasicFunction {
 		if (en instanceof MulFunction) {
 			MulFunction mulen = (MulFunction) en;
 			if (mulen.a instanceof Constant)
-				return new Tuple2D<Constant, Entity>((Constant) mulen.a, mulen.b);
+				return new Tuple2D<>((Constant) mulen.a, mulen.b);
 		}
-		return new Tuple2D<Constant, Entity>(cas.ONE, en);
+		return new Tuple2D<>(this.cas.ONE, en);
 	}
 
 }

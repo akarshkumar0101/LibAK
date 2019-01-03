@@ -1,7 +1,14 @@
 package data;
 
 public class Data {
-	public static boolean satisfiesEquavilance(Object a, Object b, boolean identical) {
-		return ((a == b) || (a != null && a.equals(b))) ? true : false;
+	// canEqual means a.equals(b) is also true
+	public static boolean equals(Object a, Object b, boolean canEqual) {
+		if (a == b)
+			return true;
+		else if (canEqual) {
+			if (a != null && a.equals(b))
+				return true;
+		}
+		return false;
 	}
 }

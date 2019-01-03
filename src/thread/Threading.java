@@ -10,6 +10,24 @@ public class Threading {
 		}
 	}
 
+	public static void join(Thread another) {
+		try {
+			another.join();
+		} catch (InterruptedException e) {
+			e.printStackTrace();
+		}
+	}
+
+	public static void join(Thread[] threads) {
+		try {
+			for (Thread t : threads) {
+				t.join();
+			}
+		} catch (InterruptedException e) {
+			e.printStackTrace();
+		}
+	}
+
 	public static Thread newThread(Runnable run, boolean startInstantly) {
 		Thread thread = new Thread(run);
 		if (startInstantly) {

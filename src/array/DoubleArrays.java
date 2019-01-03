@@ -142,7 +142,7 @@ public class DoubleArrays {
 		return c;
 	}
 
-	public static int max(double[] array) {
+	public static int maxi(double[] array) {
 		double max = Double.MIN_VALUE;
 		int index = -1;
 		for (int i = 0; i < array.length; i++) {
@@ -154,7 +154,7 @@ public class DoubleArrays {
 		return index;
 	}
 
-	public static int min(double[] array) {
+	public static int mini(double[] array) {
 		double min = Double.MAX_VALUE;
 		int index = -1;
 		for (int i = 0; i < array.length; i++) {
@@ -167,7 +167,7 @@ public class DoubleArrays {
 	}
 
 	public static double[] scaleExtremeToMagnitudeOne(double[] array) {
-		int exi = max(performFunction(array, new DoubleFunction1D() {
+		int exi = maxi(performFunction(array, new DoubleFunction1D() {
 			@Override
 			public double evaluate(double inp) {
 				return Math.abs(inp);

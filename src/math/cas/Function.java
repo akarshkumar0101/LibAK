@@ -19,13 +19,13 @@ public abstract class Function extends Entity {
 	@Override
 	public boolean equals(Object another) {
 
-		if (getClass() != another.getClass())
+		if (this.getClass() != another.getClass())
 			return false;
 		Function func = (Function) another;
-		if (parameters.length != func.parameters.length)
+		if (this.parameters.length != func.parameters.length)
 			return false;
-		for (int i = 0; i < parameters.length; i++) {
-			if (!parameters[i].equals(func.parameters[i]))
+		for (int i = 0; i < this.parameters.length; i++) {
+			if (!this.parameters[i].equals(func.parameters[i]))
 				return false;
 		}
 		return true;
@@ -33,24 +33,24 @@ public abstract class Function extends Entity {
 
 	/*
 	 * Consolidates the parameters of the function and returns the same function
-	 * 
+	 *
 	 */
 	@Override
 	public Entity consolidate() {
-		String funcString = cas.getFunctionString(this.getClass());
-		Entity[] newparams = new Entity[parameters.length];
+		String funcString = this.cas.getFunctionString(this.getClass());
 
-		newparams = Arrays.performFunction(parameters, new Function1D<Entity, Entity>() {
-			@Override
-			public Entity evaluate(Entity a) {
-				return a.consolidate();
-			}
-		});
+		Entity[] newparams = Arrays.performFunction(this.parameters, new Entity[this.parameters.length],
+				new Function1D<Entity, Entity>() {
+					@Override
+					public Entity evaluate(Entity a) {
+						return a.consolidate();
+					}
+				});
 
-		Function newFunc = cas.createFunction(funcString, newparams);
+		Function newFunc = this.cas.createFunction(funcString, newparams);
 
 		if (newFunc.isConstant())
-			return new Constant(cas, newFunc.evaluate(null));
+			return new Constant(this.cas, newFunc.evaluate(null));
 		else
 			return newFunc;
 	}
@@ -58,11 +58,11 @@ public abstract class Function extends Entity {
 	@Override
 	public String toString() {
 		String str = "";
-		str += cas.getFunctionString(this.getClass());
+		str += this.cas.getFunctionString(this.getClass());
 		str += "(";
-		for (int i = 0; i < parameters.length; i++) {
-			str += parameters[i];
-			if (i != parameters.length - 1) {
+		for (int i = 0; i < this.parameters.length; i++) {
+			str += this.parameters[i];
+			if (i != this.parameters.length - 1) {
 				str += ", ";
 			}
 		}

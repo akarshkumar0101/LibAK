@@ -1,20 +1,21 @@
 package data;
 
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 
 import data.tuple.Tuple;
 
-public class Association<T extends Tuple> {
+public class Association<T extends Tuple> implements Iterable<T> {
 
 	private final List<T> tuples;
 
 	public Association() {
-		tuples = new ArrayList<T>();
+		this.tuples = new ArrayList<>();
 	}
 
 	public T getTuple(Object o) {
-		for (T tup : tuples) {
+		for (T tup : this.tuples) {
 			if (tup.contains(o))
 				return tup;
 		}
@@ -22,19 +23,39 @@ public class Association<T extends Tuple> {
 	}
 
 	public T setTuple(T tup, int indexOfCheck) {
-		for (int i = 0; i < tuples.size(); i++) {
-			if (Data.satisfiesEquavilance(tup, tuples.get(i), false)) {
-				T ret = tuples.remove(i);
-				tuples.set(i, tup);
+		for (int i = 0; i < this.tuples.size(); i++) {
+			if (Data.equals(tup, this.tuples.get(i), true)) {
+				T ret = this.tuples.remove(i);
+				this.tuples.set(i, tup);
 				return ret;
 			}
 		}
-		tuples.add(tup);
+		this.tuples.add(tup);
 		return null;
 	}
 
 	public boolean contains(Object o) {
-		return getTuple(o) != null;
+		return this.getTuple(o) != null;
+	}
+
+	@Override
+	public Iterator<T> iterator() {
+		return new AssociationIterator();
+	}
+
+	class AssociationIterator implements Iterator<T> {
+		private int index = 0;
+
+		@Override
+		public boolean hasNext() {
+			return this.index < Association.this.tuples.size();
+		}
+
+		@Override
+		public T next() {
+			return Association.this.tuples.get(this.index++);
+		}
+
 	}
 
 }
