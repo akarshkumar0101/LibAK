@@ -4,18 +4,18 @@ import java.util.HashMap;
 
 public class Factorization {
 	public static HashMap<Integer, Integer> factorize(int num) {
-		return factorize(num, new HashMap<>());
+		return Factorization.factorize(num, new HashMap<>());
 	}
 
 	private static HashMap<Integer, Integer> factorize(int num, HashMap<Integer, Integer> factorization) {
 		if (Prime.isPrime(num)) {
-			addFactor(num, factorization);
+			Factorization.addFactor(num, factorization);
 			return factorization;
 		} else {
 			for (int i = 2; i <= java.lang.Math.sqrt(num); i++) {
-				if (Prime.isPrime(i) && num % i == 0) {
-					addFactor(i, factorization);
-					return factorize(num / i, factorization);
+				if (num % i == 0 && Prime.isPrime(i)) {
+					Factorization.addFactor(i, factorization);
+					return Factorization.factorize(num / i, factorization);
 				}
 			}
 			return null;

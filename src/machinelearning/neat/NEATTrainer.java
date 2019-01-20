@@ -11,12 +11,12 @@ import math.AKRandom;
 
 public interface NEATTrainer extends GeneticTrainer<NeuralNetwork> {
 
-	
-
 	@Override
 	public default double getMutationChance(NeuralNetwork a, GAEnvironment<NeuralNetwork> env) {
-		// TODO Auto-generated method stub
-		return .05;
+		if (env.getPopulation().indexOf(a) > env.getPopulation().size() / 2)
+			return .05;
+		else
+			return 0;
 	}
 
 	@Override

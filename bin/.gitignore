@@ -1,7 +1,11 @@
-/machinelearning/
 /array/
-/math/
-/io/
-/program/
 /data/
+/io/
+/machinelearning/
+/math/
+/oldmath/
+/program/
+/test/
 /thread/
+/ui/
+/util/

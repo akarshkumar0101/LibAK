@@ -1,51 +1,56 @@
 package ui;
 
 import java.awt.Color;
+import java.util.ArrayList;
 
-public class UIPointSet {
-    private String title;
+import util.vector.Vector2D;
+import util.vector.VectorMath;
 
-    private double[][] points;
+public class UIPointSet extends ArrayList<Vector2D<Double>> {
 
-    private Color pointColor;
-    private Color lineColor;
+	private static final long serialVersionUID = 6804111132716061746L;
 
-    private boolean hover;
+	private String title;
 
-    public UIPointSet(double[][] points) {
-	this.points = points;
-    }
+	private Color pointColor;
+	private Color lineColor;
 
-    public void setPoints(double[][] points) {
-	this.points = points;
-    }
+	private boolean hover;
 
-    public double[][] getPoints() {
-	return points;
-    }
+	public UIPointSet() {
+		super();
+		this.setPointColor(Color.BLACK);
+	}
 
-    public void setPointColor(Color col) {
-	pointColor = col;
-    }
+	public UIPointSet(double[][] pointsarr) {
+		this();
+		for (double[] point : pointsarr) {
+			this.add(new Vector2D<>(point[0], point[1], VectorMath.doubleVectorMath));
+		}
+	}
 
-    public void setLineColor(Color col) {
-	lineColor = col;
-    }
+	public void setPointColor(Color col) {
+		this.pointColor = col;
+	}
 
-    public Color getPointColor() {
-	return pointColor;
-    }
+	public void setLineColor(Color col) {
+		this.lineColor = col;
+	}
 
-    public Color getLineColor() {
-	return lineColor;
-    }
+	public Color getPointColor() {
+		return this.pointColor;
+	}
 
-    public String getTitle() {
-	return title;
-    }
+	public Color getLineColor() {
+		return this.lineColor;
+	}
 
-    public boolean getHover() {
-	return hover;
-    }
+	public String getTitle() {
+		return this.title;
+	}
+
+	public boolean getHover() {
+		return this.hover;
+	}
 
 }

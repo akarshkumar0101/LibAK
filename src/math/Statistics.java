@@ -15,4 +15,5 @@ public class Statistics {
 		average /= i;
 		return average;
 	}
+	
 }

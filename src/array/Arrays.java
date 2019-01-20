@@ -26,6 +26,20 @@ public class Arrays {
 		return false;
 	}
 
+	public static <T> void swap(T[] array, int a, int b) {
+		T temp = array[a];
+		array[a] = array[b];
+		array[b] = temp;
+	}
+
+	public static <T> T[] cloneSwap(T[] array, int a, int b) {
+		T[] retarray = array.clone();
+		T temp = retarray[a];
+		retarray[a] = retarray[b];
+		retarray[b] = temp;
+		return retarray;
+	}
+
 	public static <T> int numberOf(T[] array, T element) {
 		return Arrays.numberOf(array, element, false);
 	}

@@ -64,11 +64,7 @@ public class GAEnvironment<C> {
 
 		Collections.sort(this.population, (o1, o2) -> {
 			double dec = GAEnvironment.this.fitnesses.get(o2) - GAEnvironment.this.fitnesses.get(o1);
-			// following logic ensures decimal values keep order when subtracting
-			dec = Math.floor(dec);
-			dec += .5;
-			dec *= 2;
-			return (int) dec;
+			return dec == 0 ? 0 : dec > 0 ? 1 : -1;
 		});
 
 		this.crossPopulation();

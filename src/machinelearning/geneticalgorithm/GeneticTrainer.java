@@ -49,6 +49,7 @@ public interface GeneticTrainer<C> {
 		} else {
 			fitnessOffset = 0;
 		}
+		fitnessOffset += 0.1;
 
 		// calculate total fitness
 		double totalFitness = 0;
@@ -56,7 +57,7 @@ public interface GeneticTrainer<C> {
 			totalFitness += env.getFitnesses().get(c) + fitnessOffset;
 		}
 
-		ArrayList<Tuple2D<C, C>> partners = new ArrayList<>(numCrossovers);
+		List<Tuple2D<C, C>> partners = new ArrayList<>(numCrossovers);
 
 		for (int i = 0; i < numCrossovers; i++) {
 			double pick1Fit = AKRandom.randomNumber(0, totalFitness);
@@ -78,10 +79,11 @@ public interface GeneticTrainer<C> {
 					break;
 				}
 			}
-
+			if (a == null || b == null) {
+				System.out.println("rip");
+			}
 			partners.add(new Tuple2D<>(a, b));
 		}
-
 		return partners;
 
 	}
@@ -101,9 +103,9 @@ public interface GeneticTrainer<C> {
 	}
 
 	public default List<C> killOffWorst(List<C> population, int numToKill, GAEnvironment<C> env) {
-		List<C> killed = new ArrayList<C>(numToKill);
+		List<C> killed = new ArrayList<>(numToKill);
 
-		for(int i=0 ; i <numToKill;i++) {
+		for (int i = 0; i < numToKill; i++) {
 			C leastFitC = null;
 			double leastfitness = Double.MAX_VALUE;
 			for (C c : population) {

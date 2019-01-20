@@ -14,12 +14,16 @@ import java.util.ArrayList;
 import java.util.List;
 
 import javax.swing.JComponent;
-import javax.swing.JFrame;
 
-@SuppressWarnings("serial")
+import util.vector.Vector2D;
+
 public class GraphPanel extends JComponent
 		implements MouseListener, MouseMotionListener, MouseWheelListener, ComponentListener {
 
+	/**
+	 *
+	 */
+	private static final long serialVersionUID = 6410325060030674885L;
 	public static final Font numFont = new Font("TimesRoman", Font.PLAIN, 25);
 	public static final Font subFont = new Font("TimesRoman", Font.PLAIN, 17);
 
@@ -27,7 +31,7 @@ public class GraphPanel extends JComponent
 	// 25,14
 	public static final int yoffset = 25, xoffset = 14;
 
-	public final JFrame parentFrame;
+	// public final JFrame parentFrame;
 
 	public GraphParameters param;
 	public List<UIPointSet> pointSets;
@@ -44,17 +48,18 @@ public class GraphPanel extends JComponent
 		private UIPointSet pointSet;
 
 		private static final int CIRCLERAD = 6;
-		private static final int CIRCLEDIA = 2 * CIRCLERAD;
+		private static final int CIRCLEDIA = 2 * PointBox.CIRCLERAD;
 
 		public PointBox() {
 		}
 
 		public PointBox(PointBox another) {
-			pixx = another.pixx;
-			pixy = another.pixy;
-			valx = another.valx;
-			valy = another.valy;
-			pointSet = another.pointSet;
+			this.pixx = another.pixx;
+			this.pixy = another.pixy;
+			this.valx = another.valx;
+			this.valy = another.valy;
+			this.pointSet = another.pointSet;
+
 		}
 
 		/**
@@ -62,24 +67,28 @@ public class GraphPanel extends JComponent
 		 * method prior to calling this method
 		 */
 		private void paint(Graphics g, boolean clicked, boolean highlight) {
-			if (!(pixx > 0 && pixx < getWidth() && pixy > 0 && pixy < getHeight()))
+			if (!(this.pixx > 0 && this.pixx < GraphPanel.this.getWidth() && this.pixy > 0
+					&& this.pixy < GraphPanel.this.getHeight()))
 				return;
-			int raddif = clicked ? 10 : (highlight ? CIRCLERAD * 2 / 3 : 0);
+			int raddif = clicked ? 10 : highlight ? PointBox.CIRCLERAD * 2 / 3 : 0;
 			int diadif = raddif * 2;
-			g.fillOval(pixx - CIRCLERAD - raddif, pixy - CIRCLERAD - raddif, CIRCLEDIA + diadif, CIRCLEDIA + diadif);
+			g.fillOval(this.pixx - PointBox.CIRCLERAD - raddif, this.pixy - PointBox.CIRCLERAD - raddif,
+					PointBox.CIRCLEDIA + diadif, PointBox.CIRCLEDIA + diadif);
 
 			// drawing the box
-			String toDraw = valx + ", " + valy;
-			int boxw = toDraw.length() * (xoffset - 1) + 8;
-			int boxh = yoffset + 6;
-			g.clearRect(pixx + 7, pixy - 10 - yoffset, boxw, boxh);
-			g.drawRect(pixx + 7, pixy - 10 - yoffset, boxw, boxh);
-			g.drawString(toDraw, pixx + 10, pixy - 10);
+			String toDraw = this.valx + ", " + this.valy;
+			int boxw = toDraw.length() * (GraphPanel.xoffset - 1) + 8;
+			int boxh = GraphPanel.yoffset + 6;
+			g.clearRect(this.pixx + 7, this.pixy - 10 - GraphPanel.yoffset, boxw, boxh);
+			g.drawRect(this.pixx + 7, this.pixy - 10 - GraphPanel.yoffset, boxw, boxh);
+			g.drawString(toDraw, this.pixx + 10, this.pixy - 10);
 		}
 
 		public void updatePixCoordinate() {
-			pixx = (int) math.AKMath.scale(valx, param.minx, param.maxx, 0, getWidth());
-			pixy = (int) math.AKMath.scale(valy, param.miny, param.maxy, getHeight(), 0);
+			this.pixx = (int) math.AKMath.scale(this.valx, GraphPanel.this.param.minx, GraphPanel.this.param.maxx, 0,
+					GraphPanel.this.getWidth());
+			this.pixy = (int) math.AKMath.scale(this.valy, GraphPanel.this.param.miny, GraphPanel.this.param.maxy,
+					GraphPanel.this.getHeight(), 0);
 		}
 
 		@Override
@@ -87,10 +96,11 @@ public class GraphPanel extends JComponent
 			if (another.getClass() != PointBox.class)
 				return false;
 			PointBox an = (PointBox) another;
-			updateUnitRangeCheck();
-			if (pointSet == an.pointSet && pixx <= an.pixx + CIRCLEDIA && pixx >= an.pixx - CIRCLEDIA
-					&& pixy <= an.pixy + CIRCLEDIA && pixy >= an.pixy - CIRCLEDIA && isSameXUnit(valx, an.valx)
-					&& isSameYUnit(valy, an.valy))
+			GraphPanel.this.updateUnitRangeCheck();
+			if (this.pointSet == an.pointSet && this.pixx <= an.pixx + PointBox.CIRCLEDIA
+					&& this.pixx >= an.pixx - PointBox.CIRCLEDIA && this.pixy <= an.pixy + PointBox.CIRCLEDIA
+					&& this.pixy >= an.pixy - PointBox.CIRCLEDIA && GraphPanel.this.isSameXUnit(this.valx, an.valx)
+					&& GraphPanel.this.isSameYUnit(this.valy, an.valy))
 				return true;
 			else
 				return false;
@@ -103,18 +113,18 @@ public class GraphPanel extends JComponent
 	private boolean showmBoxPrev = false;
 	private boolean clickingmBox = false;
 
-	private ArrayList<PointBox> savedBoxes = new ArrayList<PointBox>();
+	private ArrayList<PointBox> savedBoxes = new ArrayList<>();
 
-	public GraphPanel(JFrame frame) {
+	public GraphPanel() {
 		super();
-		parentFrame = frame;
-		param = GraphParameters.getDefaultParam();
+		// this.parentFrame = frame;
+		this.param = GraphParameters.getDefaultParam();
 
-		pointSets = new ArrayList<>();
-		addMouseMotionListener(this);
-		addMouseListener(this);
-		addMouseWheelListener(this);
-		addComponentListener(this);
+		this.pointSets = new ArrayList<>();
+		this.addMouseMotionListener(this);
+		this.addMouseListener(this);
+		this.addMouseWheelListener(this);
+		this.addComponentListener(this);
 
 	}
 
@@ -125,32 +135,35 @@ public class GraphPanel extends JComponent
 
 		g.setColor(Color.BLACK);
 
-		g.setFont(numFont);
+		g.setFont(GraphPanel.numFont);
 
-		if (param.showaxis) {
+		if (this.param.showaxis) {
 			// pixels
-			int actualcenterx = (int) math.AKMath.scale(0, param.minx, param.maxx, 0, getWidth());
-			int actualcentery = (int) math.AKMath.scale(0, param.miny, param.maxy, getHeight(), 0);
+			int actualcenterx = (int) math.AKMath.scale(0, this.param.minx, this.param.maxx, 0, this.getWidth());
+			int actualcentery = (int) math.AKMath.scale(0, this.param.miny, this.param.maxy, this.getHeight(), 0);
 
-			g.drawLine(actualcenterx, 0, actualcenterx, getHeight());
-			g.drawLine(0, actualcentery, getWidth(), actualcentery);
-			g.drawString(0 + "", actualcenterx - xoffset, actualcentery + yoffset);
+			g.drawLine(actualcenterx, 0, actualcenterx, this.getHeight());
+			g.drawLine(0, actualcentery, this.getWidth(), actualcentery);
+			g.drawString(0 + "", actualcenterx - GraphPanel.xoffset, actualcentery + GraphPanel.yoffset);
 
-			g.drawString(param.maxx + "", getWidth() - xoffset * (param.maxx + "").length(), actualcentery + yoffset);
-			g.drawString(param.minx + "", 0, actualcentery + yoffset);
-			g.drawString(param.maxy + "", actualcenterx - xoffset * (param.maxy + "").length(), yoffset);
-			g.drawString(param.miny + "", actualcenterx - xoffset * (param.miny + "").length(), getHeight() - yoffset);
+			g.drawString(this.param.maxx + "", this.getWidth() - GraphPanel.xoffset * (this.param.maxx + "").length(),
+					actualcentery + GraphPanel.yoffset);
+			g.drawString(this.param.minx + "", 0, actualcentery + GraphPanel.yoffset);
+			g.drawString(this.param.maxy + "", actualcenterx - GraphPanel.xoffset * (this.param.maxy + "").length(),
+					GraphPanel.yoffset);
+			g.drawString(this.param.miny + "", actualcenterx - GraphPanel.xoffset * (this.param.miny + "").length(),
+					this.getHeight() - GraphPanel.yoffset);
 		}
 
-		for (UIPointSet pointSet : pointSets) {
+		for (UIPointSet pointSet : this.pointSets) {
 
 			int prevpx = 0, prevpy = 0;
-			for (int i = 0; i < pointSet.getPoints().length; i++) {
+			for (int i = 0; i < pointSet.size(); i++) {
 
-				double[] point = pointSet.getPoints()[i];
+				Vector2D<Double> point = pointSet.get(i);
 				// pixels
-				int px = (int) math.AKMath.scale(point[0], param.minx, param.maxx, 0, getWidth());
-				int py = (int) math.AKMath.scale(point[1], param.miny, param.maxy, getHeight(), 0);
+				int px = (int) math.AKMath.scale(point.x(), this.param.minx, this.param.maxx, 0, this.getWidth());
+				int py = (int) math.AKMath.scale(point.y(), this.param.miny, this.param.maxy, this.getHeight(), 0);
 
 				if (pointSet.getPointColor() != null) {
 					int pointWidth = 10;
@@ -172,35 +185,35 @@ public class GraphPanel extends JComponent
 			}
 		}
 
-		for (PointBox bx : savedBoxes) {
+		for (PointBox bx : this.savedBoxes) {
 			bx.updatePixCoordinate();
 			g.setColor(bx.pointSet.getPointColor());
-			bx.paint(g, clickingmBox && mBox.equals(bx), false);
+			bx.paint(g, this.clickingmBox && this.mBox.equals(bx), false);
 		}
-		if (showmBox) {
-			int index = savedBoxes.indexOf(mBox);
-			g.setColor(mBox.pointSet.getPointColor());
+		if (this.showmBox) {
+			int index = this.savedBoxes.indexOf(this.mBox);
+			g.setColor(this.mBox.pointSet.getPointColor());
 			if (index < 0) {
-				mBox.paint(g, clickingmBox, false);
+				this.mBox.paint(g, this.clickingmBox, false);
 			} else {
-				savedBoxes.get(index).paint(g, clickingmBox, true);
+				this.savedBoxes.get(index).paint(g, this.clickingmBox, true);
 			}
 			// now draw the box (top left)
 			int corneroffset = 10;
-			String eqS = "y  = " + mBox.pointSet.getTitle();
-			String fnumS = pointSets.indexOf(mBox.pointSet) + "";
+			String eqS = "y  = " + this.mBox.pointSet.getTitle();
+			String fnumS = this.pointSets.indexOf(this.mBox.pointSet) + "";
 
 			int boxx = corneroffset + 10;
 			int boxy = corneroffset;
-			int boxw = eqS.length() * (xoffset - 4) + 8 + corneroffset;
-			int boxh = yoffset + corneroffset;
+			int boxw = eqS.length() * (GraphPanel.xoffset - 4) + 8 + corneroffset;
+			int boxh = GraphPanel.yoffset + corneroffset;
 
 			g.clearRect(boxx, boxy, boxw, boxh);
 
-			g.drawString(eqS, xoffset + corneroffset, yoffset + corneroffset);
+			g.drawString(eqS, GraphPanel.xoffset + corneroffset, GraphPanel.yoffset + corneroffset);
 
-			g.setFont(subFont);
-			g.drawString(fnumS, xoffset * 2 + corneroffset, (yoffset * 4 / 3) + corneroffset);
+			g.setFont(GraphPanel.subFont);
+			g.drawString(fnumS, GraphPanel.xoffset * 2 + corneroffset, GraphPanel.yoffset * 4 / 3 + corneroffset);
 
 			g.drawRect(boxx, boxy, boxw, boxh);
 
@@ -219,19 +232,19 @@ public class GraphPanel extends JComponent
 	double rangex = 0, rangey = 0;
 
 	private void updateUnitRangeCheck() {
-		rangex = (param.maxx - param.minx) / 200;
-		rangey = (param.maxy - param.miny) / 200;
+		this.rangex = (this.param.maxx - this.param.minx) / 200;
+		this.rangey = (this.param.maxy - this.param.miny) / 200;
 	}
 
 	private boolean isSameXUnit(double x1, double x2) {
-		if (Math.abs(x1 - x2) <= rangex)
+		if (Math.abs(x1 - x2) <= this.rangex)
 			return true;
 		else
 			return false;
 	}
 
 	private boolean isSameYUnit(double y1, double y2) {
-		if (Math.abs(y1 - y2) <= rangey)
+		if (Math.abs(y1 - y2) <= this.rangey)
 			return true;
 		else
 			return false;
@@ -240,105 +253,108 @@ public class GraphPanel extends JComponent
 	@Override
 	public void mouseDragged(MouseEvent e) {
 		// dont show coor box when dragging mouse
-		showmBox = false;
+		this.showmBox = false;
 
-		int newx = e.getX(), newy = getHeight() - e.getY();
-		int changex = newx - mousemovex, changey = newy - mousemovey;
+		int newx = e.getX(), newy = this.getHeight() - e.getY();
+		int changex = newx - this.mousemovex, changey = newy - this.mousemovey;
 
-		double changewindowx = changex * (param.maxx - param.minx) / (getWidth());
-		double changewindowy = changey * (param.maxy - param.miny) / (-getHeight());
+		double changewindowx = changex * (this.param.maxx - this.param.minx) / this.getWidth();
+		double changewindowy = changey * (this.param.maxy - this.param.miny) / -this.getHeight();
 
-		param.maxx -= changewindowx;
-		param.minx -= changewindowx;
-		param.maxy += changewindowy;
-		param.miny += changewindowy;
+		this.param.maxx -= changewindowx;
+		this.param.minx -= changewindowx;
+		this.param.maxy += changewindowy;
+		this.param.miny += changewindowy;
 
-		mousemovex = newx;
-		mousemovey = newy;
+		this.mousemovex = newx;
+		this.mousemovey = newy;
 
-		repaint();
+		this.repaint();
 	}
 
 	@Override
 	public void mouseWheelMoved(MouseWheelEvent event) {
 		// dont show coor box when dragging mouse
-		showmBox = false;
+		this.showmBox = false;
 
 		int moved = event.getWheelRotation();
 
 		int mousex = event.getX();
 		int mousey = event.getY();
 
-		double graphmousex = (double) mousex / getWidth() * (param.maxx - param.minx) + param.minx;
-		double graphmousey = ((1 - (double) mousey / getHeight()) * (param.maxy - param.miny) + param.miny);
+		double graphmousex = (double) mousex / this.getWidth() * (this.param.maxx - this.param.minx) + this.param.minx;
+		double graphmousey = (1 - (double) mousey / this.getHeight()) * (this.param.maxy - this.param.miny)
+				+ this.param.miny;
 
-		double maxx = param.maxx, minx = param.minx, maxy = param.maxy, miny = param.miny;
+		double maxx = this.param.maxx, minx = this.param.minx, maxy = this.param.maxy, miny = this.param.miny;
 
-		param.maxx += moved * (maxx - graphmousex) / 10;
-		param.minx -= moved * (graphmousex - minx) / 10;
-		param.maxy += moved * (maxy - graphmousey) / 10;
-		param.miny -= moved * (graphmousey - miny) / 10;
+		this.param.maxx += moved * (maxx - graphmousex) / 10;
+		this.param.minx -= moved * (graphmousex - minx) / 10;
+		this.param.maxy += moved * (maxy - graphmousey) / 10;
+		this.param.miny -= moved * (graphmousey - miny) / 10;
 
-		repaint();
+		this.repaint();
 	}
 
 	@Override
 	public void mousePressed(MouseEvent e) {
-		clickingmBox = true;
-		repaint();
+		this.clickingmBox = true;
+		this.repaint();
 
-		mousemovex = e.getX();
-		mousemovey = getHeight() - e.getY();
+		this.mousemovex = e.getX();
+		this.mousemovey = this.getHeight() - e.getY();
 
 		// System.out.println(mousemovex + " " + mousemovey);
 	}
 
 	@Override
 	public void mouseReleased(MouseEvent e) {
-		clickingmBox = false;
-		repaint();
+		this.clickingmBox = false;
+		this.repaint();
 	}
 
 	@Override
 	public void mouseMoved(MouseEvent e) {
-		double unitx = math.AKMath.scale(e.getX(), 0, getWidth(), param.minx, param.maxx);
-		double unity = math.AKMath.scale(e.getY(), getHeight(), 0, param.miny, param.maxy);
+		double unitx = math.AKMath.scale(e.getX(), 0, this.getWidth(), this.param.minx, this.param.maxx);
+		double unity = math.AKMath.scale(e.getY(), this.getHeight(), 0, this.param.miny, this.param.maxy);
 
-		updateUnitRangeCheck();
-		for (UIPointSet pointSet : pointSets) {
-			for (int i = 0; i < pointSet.getPoints().length; i++) {
+		this.updateUnitRangeCheck();
+		for (UIPointSet pointSet : this.pointSets) {
+			for (int i = 0; i < pointSet.size(); i++) {
 				// if (unitx == f.points.get(i) && unity == f.points.get(i +1){
-				if (isSameXUnit(pointSet.getPoints()[i][0], unitx) && isSameYUnit(pointSet.getPoints()[i][1], unity)) {
-					mBox.valx = pointSet.getPoints()[i][0];
-					mBox.valy = pointSet.getPoints()[i][1];
+				if (this.isSameXUnit(pointSet.get(i).x(), unitx) && this.isSameYUnit(pointSet.get(i).y(), unity)) {
+					this.mBox.valx = pointSet.get(i).x();
+					this.mBox.valy = pointSet.get(i).y();
 					// cant just use e.getx/y b/c it moves the with the cursor,
 					// try it
-					mBox.pixx = (int) math.AKMath.scale(mBox.valx, param.minx, param.maxx, 0, getWidth());
-					mBox.pixy = (int) math.AKMath.scale(mBox.valy, param.miny, param.maxy, getHeight(), 0);
-					mBox.pointSet = pointSet;
-					showmBox = true;
-					showmBoxPrev = true;
-					repaint();
+					this.mBox.pixx = (int) math.AKMath.scale(this.mBox.valx, this.param.minx, this.param.maxx, 0,
+							this.getWidth());
+					this.mBox.pixy = (int) math.AKMath.scale(this.mBox.valy, this.param.miny, this.param.maxy,
+							this.getHeight(), 0);
+					this.mBox.pointSet = pointSet;
+					this.showmBox = true;
+					this.showmBoxPrev = true;
+					this.repaint();
 					return;
 				}
 			}
 		}
-		showmBox = false;
-		if (showmBox != showmBoxPrev) {
-			repaint();
+		this.showmBox = false;
+		if (this.showmBox != this.showmBoxPrev) {
+			this.repaint();
 		}
-		showmBoxPrev = showmBox;
+		this.showmBoxPrev = this.showmBox;
 	}
 
 	@Override
 	public void mouseClicked(MouseEvent e) {
-		if (showmBox) {
-			int i = savedBoxes.indexOf(mBox);
+		if (this.showmBox) {
+			int i = this.savedBoxes.indexOf(this.mBox);
 
 			if (i < 0) {
-				savedBoxes.add(new PointBox(mBox));
+				this.savedBoxes.add(new PointBox(this.mBox));
 			} else {
-				savedBoxes.remove(i);
+				this.savedBoxes.remove(i);
 			}
 		}
 	}
@@ -379,12 +395,12 @@ class GraphParameters {
 	public double maxy;
 
 	public GraphParameters(GraphParameters another) {
-		showaxis = another.showaxis;
+		this.showaxis = another.showaxis;
 
-		minx = another.minx;
-		maxx = another.maxx;
-		miny = another.miny;
-		maxy = another.maxy;
+		this.minx = another.minx;
+		this.maxx = another.maxx;
+		this.miny = another.miny;
+		this.maxy = another.maxy;
 	}
 
 	public GraphParameters() {
@@ -404,16 +420,16 @@ class GraphParameters {
 	}
 
 	public boolean equals(GraphParameters another) {
-		if (minx != another.minx)
+		if (this.minx != another.minx)
 			return false;
-		if (maxx != another.maxx)
+		if (this.maxx != another.maxx)
 			return false;
-		if (miny != another.miny)
+		if (this.miny != another.miny)
 			return false;
-		if (maxy != another.maxy)
+		if (this.maxy != another.maxy)
 			return false;
 
-		if (showaxis != another.showaxis)
+		if (this.showaxis != another.showaxis)
 			return false;
 
 		return true;
