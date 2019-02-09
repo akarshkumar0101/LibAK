@@ -16,18 +16,25 @@ public abstract class Terminal implements Runnable {
 		this.pos = pos;
 		this.isScanner = new Scanner(is);
 	}
-	
+
 	@Override
 	public void run() {
 		while (true) {
 			String input = this.isScanner.nextLine();
 			int spcIndex = input.indexOf(' ');
-			String command = input;
-			if(spcIndex!=-1) {
-				
+			// String command = input;
+			if (spcIndex != -1) {
+
 			}
 		}
 	}
-	
+
+	public InputStream getInputStream() {
+		return this.is;
+	}
+
+	public PrintStream getPrintOutputStream() {
+		return this.pos;
+	}
 
 }

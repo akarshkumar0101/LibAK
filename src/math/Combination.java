@@ -8,7 +8,7 @@ import array.Arrays;
 import data.tuple.Tuple2D;
 
 public class Combination {
-
+	
 	public static <T> Iterator<T[]> allArrangements(T[] array_) {
 		Iterator<T[]> it = new Iterator<T[]>() {
 
@@ -26,9 +26,10 @@ public class Combination {
 				this.fillPathWithFirsts();
 
 			}
-			//TODO change this from calculating numArrangements(may be too big)
-			//to checking if the path that it takes is maxed out, ie. is:
-			//(0,n-1)(1,n-1)(2,n-1)...(n-1,n-1)
+
+			// TODO change this from calculating numArrangements(may be too big)
+			// to checking if the path that it takes is maxed out, ie. is:
+			// (0,n-1)(1,n-1)(2,n-1)...(n-1,n-1)
 			@Override
 			public boolean hasNext() {
 				return this.index < this.numArrangements;

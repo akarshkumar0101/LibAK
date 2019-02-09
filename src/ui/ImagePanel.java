@@ -17,8 +17,9 @@ public class ImagePanel extends JComponent {
 	private int drawingType;
 
 	public ImagePanel(Image img, int drawingType) {
-		setImage(img);
-		setDrawingType(drawingType);
+		super();
+		this.setImage(img);
+		this.setDrawingType(drawingType);
 	}
 
 	public void setImage(Image img) {
@@ -31,53 +32,53 @@ public class ImagePanel extends JComponent {
 
 	@Override
 	public void paintComponent(Graphics g) {
-		if (drawingType == STRETCH_IMAGE) {
-			paintStretch(g);
-		} else if (drawingType == SCALE_IMAGE) {
-			paintScale(g);
-		} else if (drawingType == SCALE_IMAGE_ZOOM) {
-			paintZoom(g);
+		if (this.drawingType == ImagePanel.STRETCH_IMAGE) {
+			this.paintStretch(g);
+		} else if (this.drawingType == ImagePanel.SCALE_IMAGE) {
+			this.paintScale(g);
+		} else if (this.drawingType == ImagePanel.SCALE_IMAGE_ZOOM) {
+			this.paintZoom(g);
 		}
 	}
 
 	private void paintStretch(Graphics g) {
-		g.drawImage(img, 0, 0, getWidth(), getHeight(), null);
+		g.drawImage(this.img, 0, 0, this.getWidth(), this.getHeight(), null);
 	}
 
 	private void paintScale(Graphics g) {
-		double imgRatio = img.getWidth(null) / img.getHeight(null);
-		double panelRatio = getWidth() / getHeight();
+		double imgRatio = this.img.getWidth(null) / this.img.getHeight(null);
+		double panelRatio = this.getWidth() / this.getHeight();
 		if (imgRatio > panelRatio) {
-			paintMatchWidth(g, imgRatio);
+			this.paintMatchWidth(g, imgRatio);
 		} else {
-			paintMatchHeight(g, imgRatio);
+			this.paintMatchHeight(g, imgRatio);
 		}
 	}
 
 	private void paintZoom(Graphics g) {
-		double imgRatio = img.getWidth(null) / img.getHeight(null);
-		double panelRatio = getWidth() / getHeight();
+		double imgRatio = this.img.getWidth(null) / this.img.getHeight(null);
+		double panelRatio = this.getWidth() / this.getHeight();
 		if (imgRatio > panelRatio) {
-			paintMatchHeight(g, imgRatio);
+			this.paintMatchHeight(g, imgRatio);
 		} else {
-			paintMatchWidth(g, imgRatio);
+			this.paintMatchWidth(g, imgRatio);
 		}
 	}
 
 	private void paintMatchWidth(Graphics g, double imgRatio) {
-		int width = getWidth();
+		int width = this.getWidth();
 		int height = (int) (width / imgRatio);
 
-		int ystart = (getHeight() - img.getHeight(null)) / 2;
-		g.drawImage(img, 0, ystart, width, height, null);
+		int ystart = (this.getHeight() - this.img.getHeight(null)) / 2;
+		g.drawImage(this.img, 0, ystart, width, height, null);
 	}
 
 	private void paintMatchHeight(Graphics g, double imgRatio) {
-		int height = getHeight();
+		int height = this.getHeight();
 		int width = (int) (imgRatio * height);
 
-		int xstart = (getWidth() - img.getWidth(null)) / 2;
-		g.drawImage(img, xstart, 0, width, height, null);
+		int xstart = (this.getWidth() - this.img.getWidth(null)) / 2;
+		g.drawImage(this.img, xstart, 0, width, height, null);
 	}
 
 }

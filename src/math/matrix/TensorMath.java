@@ -5,15 +5,10 @@ import data.function.Function2D;
 
 public class TensorMath {
 
-	public static final Function2D<Double, Double, Double> ADD_DOUBLE_FUNCTION_2D = new Function2D<Double, Double, Double>() {
-		@Override
-		public Double evaluate(Double a, Double b) {
-			return a + b;
-		}
-	};
+	public static final Function2D<Double, Double, Double> ADD_DOUBLE_FUNCTION_2D = (a, b) -> a + b;
 
 	public static Double[][] tensorAdd(Double[][] m1, Double[][] m2) {
-		return Arrays.performFunction(m1, m2, ADD_DOUBLE_FUNCTION_2D, Arrays.newArrayOfSameSize(m1, null));
+		return Arrays.performFunction(m1, m2, TensorMath.ADD_DOUBLE_FUNCTION_2D, Arrays.newArrayOfSameSize(m1, null));
 	}
 
 	public static double[] tensorAdd(double[] t1, double[] t2) {
@@ -27,7 +22,7 @@ public class TensorMath {
 	public static double[][] tensorAdd(double[][] t1, double[][] t2) {
 		double[][] mResult = t1.clone();
 		for (int i = 0; i < t1.length; i++) {
-			mResult[i] = tensorAdd(t1[i], t2[i]);
+			mResult[i] = TensorMath.tensorAdd(t1[i], t2[i]);
 		}
 		return mResult;
 	}
@@ -35,7 +30,7 @@ public class TensorMath {
 	public static double[][][] tensorAdd(double[][][] t1, double[][][] t2) {
 		double[][][] mResult = t1.clone();
 		for (int i = 0; i < t1.length; i++) {
-			mResult[i] = tensorAdd(t1[i], t2[i]);
+			mResult[i] = TensorMath.tensorAdd(t1[i], t2[i]);
 		}
 		return mResult;
 	}
@@ -51,7 +46,7 @@ public class TensorMath {
 	public static double[][] tensorScale(double[][] tensor, double scale) {
 		tensor = tensor.clone();
 		for (int i = 0; i < tensor.length; i++) {
-			tensor[i] = tensorScale(tensor[i], scale);
+			tensor[i] = TensorMath.tensorScale(tensor[i], scale);
 		}
 		return tensor;
 	}
@@ -59,7 +54,7 @@ public class TensorMath {
 	public static double[][][] tensorScale(double[][][] tensor, double scale) {
 		tensor = tensor.clone();
 		for (int i = 0; i < tensor.length; i++) {
-			tensor[i] = tensorScale(tensor[i], scale);
+			tensor[i] = TensorMath.tensorScale(tensor[i], scale);
 		}
 		return tensor;
 	}
@@ -82,6 +77,25 @@ public class TensorMath {
 			}
 		}
 		return mr;
+	}
+
+	// M[row][col] , same thing as M[y][x]
+	public static double[] matrixVectorMult(double[][] M, double[] v) {
+		double[] result = new double[M.length];
+		for (int i = 0; i < result.length; i++) {
+			result[i] = TensorMath.dot(M[i], v);
+		}
+		return result;
+	}
+
+	public static double dot(double[] v1, double[] v2) {
+		double product = 0;
+
+		for (int i = 0; i < v1.length; i++) {
+			product += v1[i] * v2[i];
+		}
+
+		return product;
 	}
 
 }

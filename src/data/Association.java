@@ -1,21 +1,19 @@
 package data;
 
 import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
 
 import data.tuple.Tuple;
 
-public class Association<T extends Tuple> implements Iterable<T> {
+public class Association<T extends Tuple> extends ArrayList<T> implements Iterable<T> {
 
-	private final List<T> tuples;
+	private static final long serialVersionUID = -4291746612701313280L;
 
 	public Association() {
-		this.tuples = new ArrayList<>();
+		super();
 	}
 
 	public T getTuple(Object o) {
-		for (T tup : this.tuples) {
+		for (T tup : this) {
 			if (tup.contains(o))
 				return tup;
 		}
@@ -23,39 +21,20 @@ public class Association<T extends Tuple> implements Iterable<T> {
 	}
 
 	public T setTuple(T tup, int indexOfCheck) {
-		for (int i = 0; i < this.tuples.size(); i++) {
-			if (Data.equals(tup, this.tuples.get(i), true)) {
-				T ret = this.tuples.remove(i);
-				this.tuples.set(i, tup);
+		for (int i = 0; i < this.size(); i++) {
+			if (Data.equals(tup, this.get(i), true)) {
+				T ret = this.remove(i);
+				this.set(i, tup);
 				return ret;
 			}
 		}
-		this.tuples.add(tup);
+		this.add(tup);
 		return null;
 	}
 
+	@Override
 	public boolean contains(Object o) {
 		return this.getTuple(o) != null;
-	}
-
-	@Override
-	public Iterator<T> iterator() {
-		return new AssociationIterator();
-	}
-
-	class AssociationIterator implements Iterator<T> {
-		private int index = 0;
-
-		@Override
-		public boolean hasNext() {
-			return this.index < Association.this.tuples.size();
-		}
-
-		@Override
-		public T next() {
-			return Association.this.tuples.get(this.index++);
-		}
-
 	}
 
 }

@@ -1,5 +1,5 @@
 package program;
 
 public interface DetailedRunnable {
-	public abstract Object run(Object... specificaations);
+	public abstract Object run(Object... specifications);
 }

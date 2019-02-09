@@ -13,7 +13,11 @@ public class AKMath {
 	}
 
 	public static double dist(double[] point1, double[] point2) {
-		return dist(point1[0], point1[1], point2[0], point2[1]);
+		return AKMath.dist(point1[0], point1[1], point2[0], point2[1]);
+	}
+
+	public static double sqr(double a) {
+		return a * a;
 	}
 
 }

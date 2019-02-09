@@ -1,13 +1,10 @@
 package machinelearning.neuralnet;
 
-import java.util.ArrayList;
-import java.util.List;
-
 import data.tuple.Tuple2D;
 import math.AKMath;
 
 //D = Data, A = Answer
-public interface NeuralNetworkTrainer<D, A> {
+public interface OldNeuralNetworkTrainer<D, A> {
 
 	public abstract double[] rawToInputLayer(D d);
 
@@ -20,15 +17,15 @@ public interface NeuralNetworkTrainer<D, A> {
 
 	// return a double such that arr[0] is the input and arr[1] is the
 	// expectedOutput
-	public default Tuple2D<double[], double[]> getRandomTrainingExample() {
+	public default double[][] getRandomTrainingExample() {
 		Tuple2D<D, A> da = this.getRandomRawData();
-		return new Tuple2D<>(this.rawToInputLayer(da.getA()), this.rawToOutputLayer(da.getB()));
+		return new double[][] { this.rawToInputLayer(da.getA()), this.rawToOutputLayer(da.getB()) };
 	}
 
-	public default List<Tuple2D<double[], double[]>> getRandomTrainingExamples(int batchSize) {
-		List<Tuple2D<double[], double[]>> examples = new ArrayList<>(batchSize);
-		for (int i = 0; i < batchSize; i++) {
-			examples.add(this.getRandomTrainingExample());
+	public default double[][][] getRandomTrainingExamples(int batchSize) {
+		double[][][] examples = new double[batchSize][][];
+		for (int i = 0; i < examples.length; i++) {
+			examples[i] = this.getRandomTrainingExample();
 		}
 		return examples;
 	}
@@ -36,7 +33,7 @@ public interface NeuralNetworkTrainer<D, A> {
 	public static final double STANDARD_ACCEPTABLE_ERROR = .05;
 
 	public default double acceptableOutputError() {
-		return NeuralNetworkTrainer.STANDARD_ACCEPTABLE_ERROR;
+		return OldNeuralNetworkTrainer.STANDARD_ACCEPTABLE_ERROR;
 	}
 
 	public default boolean isCorrect(double[] output, double[] expectedOutput) {
@@ -63,6 +60,13 @@ public interface NeuralNetworkTrainer<D, A> {
 
 	public default double getBiasLearningRate() {
 		return this.getWeightLearningRate();
+	}
+
+	public default int getN() {
+		return Integer.MAX_VALUE;
+	}
+
+	public default void runEveryNIterations(double[] beforePerformance, double[] afterPerformance) {
 	}
 
 }
