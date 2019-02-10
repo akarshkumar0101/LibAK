@@ -4,7 +4,6 @@ import java.awt.Color;
 import java.util.ArrayList;
 
 import util.vector.Vector2D;
-import util.vector.VectorMath;
 
 public class UIPointSet extends ArrayList<Vector2D<Double>> {
 
@@ -25,7 +24,7 @@ public class UIPointSet extends ArrayList<Vector2D<Double>> {
 	public UIPointSet(double[][] pointsarr) {
 		this();
 		for (double[] point : pointsarr) {
-			this.add(new Vector2D<>(point[0], point[1], VectorMath.doubleVectorMath));
+			this.add(Vector2D.createDoubleVector2D(point[0], point[1]));
 		}
 	}
 
@@ -43,6 +42,10 @@ public class UIPointSet extends ArrayList<Vector2D<Double>> {
 
 	public Color getLineColor() {
 		return this.lineColor;
+	}
+
+	public void setTitle(String title) {
+		this.title = title;
 	}
 
 	public String getTitle() {

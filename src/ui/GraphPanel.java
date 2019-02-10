@@ -15,15 +15,14 @@ import java.util.List;
 
 import javax.swing.JComponent;
 
+import math.AKMath;
 import util.vector.Vector2D;
 
 public class GraphPanel extends JComponent
 		implements MouseListener, MouseMotionListener, MouseWheelListener, ComponentListener {
 
-	/**
-	 *
-	 */
 	private static final long serialVersionUID = 6410325060030674885L;
+
 	public static final Font numFont = new Font("TimesRoman", Font.PLAIN, 25);
 	public static final Font subFont = new Font("TimesRoman", Font.PLAIN, 17);
 
@@ -31,82 +30,11 @@ public class GraphPanel extends JComponent
 	// 25,14
 	public static final int yoffset = 25, xoffset = 14;
 
-	// public final JFrame parentFrame;
-
 	public GraphParameters param;
 	public List<UIPointSet> pointSets;
 
 	// USED JUST FOR TRACKING MOUSE DRAGS(moving graph)
 	private int mousemovex = 0, mousemovey = 0;
-
-	private class PointBox {
-		// stored with pixels not units b/c avoiding too much calculations, and
-		// mouse box only paints when cursor is active on the function(not when
-		// moving graph or zooming in,etc)
-		private int pixx = 0, pixy = 0;
-		private double valx = 0, valy = 0;
-		private UIPointSet pointSet;
-
-		private static final int CIRCLERAD = 6;
-		private static final int CIRCLEDIA = 2 * PointBox.CIRCLERAD;
-
-		public PointBox() {
-		}
-
-		public PointBox(PointBox another) {
-			this.pixx = another.pixx;
-			this.pixy = another.pixy;
-			this.valx = another.valx;
-			this.valy = another.valy;
-			this.pointSet = another.pointSet;
-
-		}
-
-		/**
-		 * pixx coordinates should be updated through the PointBox.updateBixCoordinate
-		 * method prior to calling this method
-		 */
-		private void paint(Graphics g, boolean clicked, boolean highlight) {
-			if (!(this.pixx > 0 && this.pixx < GraphPanel.this.getWidth() && this.pixy > 0
-					&& this.pixy < GraphPanel.this.getHeight()))
-				return;
-			int raddif = clicked ? 10 : highlight ? PointBox.CIRCLERAD * 2 / 3 : 0;
-			int diadif = raddif * 2;
-			g.fillOval(this.pixx - PointBox.CIRCLERAD - raddif, this.pixy - PointBox.CIRCLERAD - raddif,
-					PointBox.CIRCLEDIA + diadif, PointBox.CIRCLEDIA + diadif);
-
-			// drawing the box
-			String toDraw = this.valx + ", " + this.valy;
-			int boxw = toDraw.length() * (GraphPanel.xoffset - 1) + 8;
-			int boxh = GraphPanel.yoffset + 6;
-			g.clearRect(this.pixx + 7, this.pixy - 10 - GraphPanel.yoffset, boxw, boxh);
-			g.drawRect(this.pixx + 7, this.pixy - 10 - GraphPanel.yoffset, boxw, boxh);
-			g.drawString(toDraw, this.pixx + 10, this.pixy - 10);
-		}
-
-		public void updatePixCoordinate() {
-			this.pixx = (int) math.AKMath.scale(this.valx, GraphPanel.this.param.minx, GraphPanel.this.param.maxx, 0,
-					GraphPanel.this.getWidth());
-			this.pixy = (int) math.AKMath.scale(this.valy, GraphPanel.this.param.miny, GraphPanel.this.param.maxy,
-					GraphPanel.this.getHeight(), 0);
-		}
-
-		@Override
-		public boolean equals(Object another) {
-			if (another.getClass() != PointBox.class)
-				return false;
-			PointBox an = (PointBox) another;
-			GraphPanel.this.updateUnitRangeCheck();
-			if (this.pointSet == an.pointSet && this.pixx <= an.pixx + PointBox.CIRCLEDIA
-					&& this.pixx >= an.pixx - PointBox.CIRCLEDIA && this.pixy <= an.pixy + PointBox.CIRCLEDIA
-					&& this.pixy >= an.pixy - PointBox.CIRCLEDIA && GraphPanel.this.isSameXUnit(this.valx, an.valx)
-					&& GraphPanel.this.isSameYUnit(this.valy, an.valy))
-				return true;
-			else
-				return false;
-		}
-
-	}
 
 	private PointBox mBox = new PointBox();
 	private boolean showmBox = false;
@@ -117,7 +45,6 @@ public class GraphPanel extends JComponent
 
 	public GraphPanel() {
 		super();
-		// this.parentFrame = frame;
 		this.param = GraphParameters.getDefaultParam();
 
 		this.pointSets = new ArrayList<>();
@@ -128,8 +55,42 @@ public class GraphPanel extends JComponent
 
 	}
 
+	public void normalize() {
+		double minx = Double.MAX_VALUE, miny = Double.MAX_VALUE;
+		double maxx = -Double.MAX_VALUE, maxy = -Double.MAX_VALUE;
+
+		int ranNum = 0;
+		for (UIPointSet pointSet : this.pointSets) {
+			for (Vector2D<Double> point : pointSet) {
+				double x = point.x(), y = point.y();
+				if (x < minx) {
+					minx = x;
+				}
+				if (x > maxx) {
+					maxx = x;
+				}
+				if (y < miny) {
+					miny = y;
+				}
+				if (y > maxy) {
+					maxy = y;
+				}
+				ranNum++;
+			}
+		}
+		if (ranNum < 2) {
+			this.param = GraphParameters.getDefaultParam();
+		} else {
+			this.param.minx = AKMath.scale(-0.1, 0, 1, minx, maxx);
+			this.param.maxx = AKMath.scale(1.1, 0, 1, minx, maxx);
+			this.param.miny = AKMath.scale(-0.1, 0, 1, miny, maxy);
+			this.param.maxy = AKMath.scale(1.1, 0, 1, miny, maxy);
+		}
+	}
+
 	@Override
 	public void paintComponent(Graphics g) {
+
 		// TODO comment next line out see what happens, move it and zoom in/out
 		super.paintComponent(g);
 
@@ -138,13 +99,18 @@ public class GraphPanel extends JComponent
 		g.setFont(GraphPanel.numFont);
 
 		if (this.param.showaxis) {
+
 			// pixels
 			int actualcenterx = (int) math.AKMath.scale(0, this.param.minx, this.param.maxx, 0, this.getWidth());
 			int actualcentery = (int) math.AKMath.scale(0, this.param.miny, this.param.maxy, this.getHeight(), 0);
 
 			g.drawLine(actualcenterx, 0, actualcenterx, this.getHeight());
 			g.drawLine(0, actualcentery, this.getWidth(), actualcentery);
-			g.drawString(0 + "", actualcenterx - GraphPanel.xoffset, actualcentery + GraphPanel.yoffset);
+
+			// TODO first drawString call takes way too long (1.6 sec, most of the delay in
+			// starting graphPanel)
+			// figure out why
+			g.drawString("0", actualcenterx - GraphPanel.xoffset, actualcentery + GraphPanel.yoffset);
 
 			g.drawString(this.param.maxx + "", this.getWidth() - GraphPanel.xoffset * (this.param.maxx + "").length(),
 					actualcentery + GraphPanel.yoffset);
@@ -153,6 +119,7 @@ public class GraphPanel extends JComponent
 					GraphPanel.yoffset);
 			g.drawString(this.param.miny + "", actualcenterx - GraphPanel.xoffset * (this.param.miny + "").length(),
 					this.getHeight() - GraphPanel.yoffset);
+
 		}
 
 		for (UIPointSet pointSet : this.pointSets) {
@@ -190,6 +157,7 @@ public class GraphPanel extends JComponent
 			g.setColor(bx.pointSet.getPointColor());
 			bx.paint(g, this.clickingmBox && this.mBox.equals(bx), false);
 		}
+
 		if (this.showmBox) {
 			int index = this.savedBoxes.indexOf(this.mBox);
 			g.setColor(this.mBox.pointSet.getPointColor());
@@ -202,7 +170,8 @@ public class GraphPanel extends JComponent
 			int corneroffset = 10;
 			String eqS = "y  = " + this.mBox.pointSet.getTitle();
 			String fnumS = this.pointSets.indexOf(this.mBox.pointSet) + "";
-
+			//TODO fix drawing sub number as another string
+			
 			int boxx = corneroffset + 10;
 			int boxy = corneroffset;
 			int boxw = eqS.length() * (GraphPanel.xoffset - 4) + 8 + corneroffset;
@@ -218,6 +187,7 @@ public class GraphPanel extends JComponent
 			g.drawRect(boxx, boxy, boxw, boxh);
 
 		}
+
 	}
 
 	// private static ImageIcon getImage(String img, int x, int y) {
@@ -384,55 +354,73 @@ public class GraphPanel extends JComponent
 	public void componentHidden(ComponentEvent e) {
 	}
 
-}
+	private class PointBox {
+		// stored with pixels not units b/c avoiding too much calculations, and
+		// mouse box only paints when cursor is active on the function(not when
+		// moving graph or zooming in,etc)
+		private int pixx = 0, pixy = 0;
+		private double valx = 0, valy = 0;
+		private UIPointSet pointSet;
 
-class GraphParameters {
-	public boolean showaxis;
+		private static final int CIRCLERAD = 6;
+		private static final int CIRCLEDIA = 2 * PointBox.CIRCLERAD;
 
-	public double minx;
-	public double maxx;
-	public double miny;
-	public double maxy;
+		public PointBox() {
+		}
 
-	public GraphParameters(GraphParameters another) {
-		this.showaxis = another.showaxis;
+		public PointBox(PointBox another) {
+			this.pixx = another.pixx;
+			this.pixy = another.pixy;
+			this.valx = another.valx;
+			this.valy = another.valy;
+			this.pointSet = another.pointSet;
 
-		this.minx = another.minx;
-		this.maxx = another.maxx;
-		this.miny = another.miny;
-		this.maxy = another.maxy;
-	}
+		}
 
-	public GraphParameters() {
-	}
+		/**
+		 * pixx coordinates should be updated through the PointBox.updateBixCoordinate
+		 * method prior to calling this method
+		 */
+		private void paint(Graphics g, boolean clicked, boolean highlight) {
+			if (!(this.pixx > 0 && this.pixx < GraphPanel.this.getWidth() && this.pixy > 0
+					&& this.pixy < GraphPanel.this.getHeight()))
+				return;
+			int raddif = clicked ? 10 : highlight ? PointBox.CIRCLERAD * 2 / 3 : 0;
+			int diadif = raddif * 2;
+			g.fillOval(this.pixx - PointBox.CIRCLERAD - raddif, this.pixy - PointBox.CIRCLERAD - raddif,
+					PointBox.CIRCLEDIA + diadif, PointBox.CIRCLEDIA + diadif);
 
-	public static GraphParameters getDefaultParam() {
-		GraphParameters param = new GraphParameters();
+			// drawing the box
+			String toDraw = this.valx + ", " + this.valy;
+			int boxw = toDraw.length() * (GraphPanel.xoffset - 1) + 8;
+			int boxh = GraphPanel.yoffset + 6;
+			g.clearRect(this.pixx + 7, this.pixy - 10 - GraphPanel.yoffset, boxw, boxh);
+			g.drawRect(this.pixx + 7, this.pixy - 10 - GraphPanel.yoffset, boxw, boxh);
+			g.drawString(toDraw, this.pixx + 10, this.pixy - 10);
+		}
 
-		param.minx = -10;
-		param.maxx = 10;
-		param.miny = -10;
-		param.maxy = 10;
+		public void updatePixCoordinate() {
+			this.pixx = (int) math.AKMath.scale(this.valx, GraphPanel.this.param.minx, GraphPanel.this.param.maxx, 0,
+					GraphPanel.this.getWidth());
+			this.pixy = (int) math.AKMath.scale(this.valy, GraphPanel.this.param.miny, GraphPanel.this.param.maxy,
+					GraphPanel.this.getHeight(), 0);
+		}
 
-		param.showaxis = true;
+		@Override
+		public boolean equals(Object another) {
+			if (another.getClass() != PointBox.class)
+				return false;
+			PointBox an = (PointBox) another;
+			GraphPanel.this.updateUnitRangeCheck();
+			if (this.pointSet == an.pointSet && this.pixx <= an.pixx + PointBox.CIRCLEDIA
+					&& this.pixx >= an.pixx - PointBox.CIRCLEDIA && this.pixy <= an.pixy + PointBox.CIRCLEDIA
+					&& this.pixy >= an.pixy - PointBox.CIRCLEDIA && GraphPanel.this.isSameXUnit(this.valx, an.valx)
+					&& GraphPanel.this.isSameYUnit(this.valy, an.valy))
+				return true;
+			else
+				return false;
+		}
 
-		return param;
-	}
-
-	public boolean equals(GraphParameters another) {
-		if (this.minx != another.minx)
-			return false;
-		if (this.maxx != another.maxx)
-			return false;
-		if (this.miny != another.miny)
-			return false;
-		if (this.maxy != another.maxy)
-			return false;
-
-		if (this.showaxis != another.showaxis)
-			return false;
-
-		return true;
 	}
 
 }
