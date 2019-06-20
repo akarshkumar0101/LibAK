@@ -1,48 +1,52 @@
 package machinelearning.ne;
 
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 public class NEAT {
 	public static void main(String... args) {
-		NEATNNGeno geno = new NEATNNGeno(true, 2, 1, 1);
-		geno.nodeGenes.add(new NodeGene(0, 0, NodeType.BIAS));
-		geno.nodeGenes.add(new NodeGene(1, 1, NodeType.INPUT));
-		geno.nodeGenes.add(new NodeGene(2, 2, NodeType.INPUT));
-		geno.nodeGenes.add(new NodeGene(3, 3, NodeType.OUTPUT));
-		geno.nodeGenes.add(new NodeGene(4, 4, NodeType.HIDDEN));
+		NEATNNGeno geno1 = new NEATNNGeno(false, 3, 1, 1);
+		geno1.connectionGenes.add(new ConnectionGene(1, 1, 4, 0.3, true));
+		geno1.connectionGenes.add(new ConnectionGene(2, 2, 4, 5.0, false));
+		geno1.connectionGenes.add(new ConnectionGene(3, 3, 4, 2.0, true));
+		geno1.connectionGenes.add(new ConnectionGene(4, 2, 5, 1.7, true));
+		geno1.connectionGenes.add(new ConnectionGene(5, 5, 4, 0.2, true));
+		geno1.connectionGenes.add(new ConnectionGene(8, 1, 5, 0.5, true));
 
-		geno.connectionGenes.add(new ConnectionGene(5, 0, 4, 0.3, true));
-		geno.connectionGenes.add(new ConnectionGene(6, 1, 4, 5.0, true));
-		geno.connectionGenes.add(new ConnectionGene(7, 2, 4, 2.0, true));
-		geno.connectionGenes.add(new ConnectionGene(8, 2, 3, 1.7, true));
-		geno.connectionGenes.add(new ConnectionGene(9, 4, 3, -0.2, true));
-		geno.connectionGenes.add(new ConnectionGene(10, 0, 2, 0.56, false));
+		NEATNNGeno geno2 = new NEATNNGeno(false, 3, 1, 2);
+		geno2.connectionGenes.add(new ConnectionGene(1, 1, 4, 0.3, true));
+		geno2.connectionGenes.add(new ConnectionGene(2, 2, 4, 5.0, false));
+		geno2.connectionGenes.add(new ConnectionGene(3, 3, 4, 2.0, true));
+		geno2.connectionGenes.add(new ConnectionGene(4, 2, 5, 1.7, true));
+		geno2.connectionGenes.add(new ConnectionGene(5, 5, 4, 0.2, false));
+		geno2.connectionGenes.add(new ConnectionGene(6, 5, 6, 4.5, true));
+		geno2.connectionGenes.add(new ConnectionGene(7, 6, 4, 0.8, true));
+		geno2.connectionGenes.add(new ConnectionGene(9, 3, 5, 2.3, true));
+		geno2.connectionGenes.add(new ConnectionGene(10, 1, 6, 5.2, true));
 
-		NEATNeuralNetwork network = new NEATNeuralNetwork(geno);
+		NEATNNGeno childGeno = geno1.crossover(geno2);
+		NEATNeuralNetwork network = new NEATNeuralNetwork(childGeno);
 
-		// network.calculate();
+		// System.out.println(geno1);
+		// System.out.println(geno2);
+		System.out.println(childGeno);
 
-		System.out.println(geno);
+		network.calculate();
+
+		System.out.println(network.outputNeurons.get(0).activation);
 	}
 
 	public static void test1() {
 		NEATNNGeno geno = new NEATNNGeno(true, 2, 1, 1);
-		geno.nodeGenes.add(new NodeGene(0, 0, NodeType.BIAS));
-		geno.nodeGenes.add(new NodeGene(1, 1, NodeType.INPUT));
-		geno.nodeGenes.add(new NodeGene(2, 2, NodeType.INPUT));
-		geno.nodeGenes.add(new NodeGene(3, 3, NodeType.OUTPUT));
-		geno.nodeGenes.add(new NodeGene(4, 4, NodeType.HIDDEN));
 
-		geno.connectionGenes.add(new ConnectionGene(5, 0, 4, 0.3, true));
-		geno.connectionGenes.add(new ConnectionGene(6, 1, 4, 5.0, true));
-		geno.connectionGenes.add(new ConnectionGene(7, 2, 4, 2.0, true));
-		geno.connectionGenes.add(new ConnectionGene(8, 2, 3, 1.7, true));
-		geno.connectionGenes.add(new ConnectionGene(9, 4, 3, -0.2, true));
-		geno.connectionGenes.add(new ConnectionGene(10, 0, 2, 0.56, false));
+		geno.connectionGenes.add(new ConnectionGene(1, 0, 4, 0.3, true));
+		geno.connectionGenes.add(new ConnectionGene(2, 1, 4, 5.0, true));
+		geno.connectionGenes.add(new ConnectionGene(3, 2, 4, 2.0, true));
+		geno.connectionGenes.add(new ConnectionGene(4, 2, 3, 1.7, true));
+		geno.connectionGenes.add(new ConnectionGene(5, 4, 3, -0.2, true));
+		geno.connectionGenes.add(new ConnectionGene(6, 0, 2, 0.56, false));
 
 		NEATNeuralNetwork network = new NEATNeuralNetwork(geno);
 
@@ -205,7 +209,7 @@ class ConnectionGene extends Gene {
 }
 
 class NEATNNGeno {
-	List<NodeGene> nodeGenes;
+	// List<NodeGene> nodeGenes;
 	List<ConnectionGene> connectionGenes;
 
 	// bias here is 0
@@ -219,58 +223,65 @@ class NEATNNGeno {
 	int numHiddenNodes;
 
 	public NEATNNGeno(boolean bias, int numInputNodes, int numOutputNodes, int numHiddenNodes) {
-		this.nodeGenes = new ArrayList<>();
-		this.connectionGenes = new ArrayList<>();
 
 		this.bias = bias;
 		this.numInputNodes = numInputNodes;
 		this.numOutputNodes = numOutputNodes;
 		this.numHiddenNodes = numHiddenNodes;
+		// this.nodeGenes = new ArrayList<>();
+
+		this.connectionGenes = new ArrayList<>();
 	}
 
 	public NEATNNGeno crossover(NEATNNGeno geno) {
-		List<Gene> genes = new ArrayList<>();
-		genes.addAll(this.nodeGenes);
-		genes.addAll(this.connectionGenes);
+		// List<ConnectionGene> agenes = new ArrayList<>();
+		// genes.addAll(this.nodeGenes);
+		// agenes.addAll(this.connectionGenes);
 
-		List<Gene> genes2 = new ArrayList<>();
-		genes2.addAll(geno.nodeGenes);
-		genes2.addAll(geno.connectionGenes);
+		// List<ConnectionGene> bgenes = new ArrayList<>();
+		// genes2.addAll(geno.nodeGenes);
+		// bgenes.addAll(geno.connectionGenes);
 
-		Comparator<Gene> comparator = (o1, o2) -> o1.innovationNumber - o2.innovationNumber;
-		genes.sort(comparator);
-		genes2.sort(comparator);
+		// Comparator<Gene> comparator = (o1, o2) -> o1.innovationNumber -
+		// o2.innovationNumber;
+		// agenes.sort(comparator);
+		// bgenes.sort(comparator);
 
-		NEATNNGeno child = new NEATNNGeno(this.bias, this.numInputNodes, this.numOutputNodes, this.numHiddenNodes);
+		NEATNNGeno child = new NEATNNGeno(this.bias || geno.bias, Math.max(this.numInputNodes, geno.numInputNodes),
+				Math.max(this.numOutputNodes, geno.numOutputNodes), Math.max(this.numHiddenNodes, geno.numHiddenNodes));
 
 		int i1 = 0;
 		int i2 = 0;
-		List<Gene> childGenes = new ArrayList<>();
-		while (i1 < genes.size() || i2 < genes2.size()) {
-			if (i1 >= genes.size()) {
-				childGenes.add(genes2.get(i2).copy());
+		// List<Gene> childGenes = new ArrayList<>();
+		while (i1 < this.connectionGenes.size() || i2 < geno.connectionGenes.size()) {
+			if (i1 >= this.connectionGenes.size()) {
+				child.connectionGenes.add(geno.connectionGenes.get(i2).copy());
 				i2++;
+				continue;
 			}
-			if (i2 >= genes2.size()) {
-				childGenes.add(genes.get(i1).copy());
+			if (i2 >= geno.connectionGenes.size()) {
+				child.connectionGenes.add(this.connectionGenes.get(i1).copy());
 				i1++;
+				continue;
 			}
-			Gene g1 = genes.get(i1), g2 = genes.get(i2);
+			ConnectionGene g1 = this.connectionGenes.get(i1);
+			ConnectionGene g2 = geno.connectionGenes.get(i2);
 			if (g1.innovationNumber == g2.innovationNumber) {
-				Gene g = g1.copy();
-				if (g instanceof ConnectionGene) {
-					((ConnectionGene) g).enabled = ((ConnectionGene) g1).enabled && ((ConnectionGene) g2).enabled;
-				} else {
-					childGenes.add(g);
-				}
+				ConnectionGene g = g1.copy();
+				g.enabled = g1.enabled && g2.enabled;
+
+				child.connectionGenes.add(g);
+				i1++;
+				i2++;
 			} else if (g1.innovationNumber < g2.innovationNumber) {
 				// g1 is disjoint
-				childGenes.add(g1.copy());
+				child.connectionGenes.add(g1.copy());
+				i1++;
 			} else {
 				// g2 is disjoint
-				childGenes.add(g2.copy());
+				child.connectionGenes.add(g2.copy());
+				i2++;
 			}
-
 		}
 
 		return child;
@@ -294,9 +305,9 @@ class NEATNNGeno {
 			str += "\t{Node " + i + ", Type: HIDDEN}\n";
 		}
 
-		for (NodeGene nodeGene : this.nodeGenes) {
-			str += "\t" + nodeGene + "\n";
-		}
+		/*
+		 * for (NodeGene nodeGene : this.nodeGenes) { str += "\t" + nodeGene + "\n"; }
+		 */
 		for (ConnectionGene connectionGene : this.connectionGenes) {
 			str += "\t" + connectionGene + "\n";
 		}
@@ -342,41 +353,36 @@ class NEATNeuralNetwork {
 
 	public void buildFromGeno(NEATNNGeno geno) {
 		Map<Integer, NEATNeuron> neurons = new HashMap<>();
-		for (NodeGene nodeGene : geno.nodeGenes) {
-			NEATNeuron neuron;
-			switch (nodeGene.type) {
-			case BIAS:
-				neuron = new BiasNeuron(this);
-				break;
-			case INPUT:
-				neuron = new NEATInputNeuron(this) {
-					@Override
-					public double getInput() {
-						return 0;
-					}
-				};
-				break;
-			default:
-				neuron = new NEATNeuron(this);
-				break;
-			}
-			neurons.put(nodeGene.nodeID, neuron);
 
-			switch (nodeGene.type) {
-			case BIAS:
-				this.inputNeurons.add(neuron);
-				break;
-			case INPUT:
-				this.inputNeurons.add(neuron);
-				break;
-			case OUTPUT:
-				this.outputNeurons.add(neuron);
-				break;
-			default:
-				this.hiddenNeurons.add(neuron);
-				break;
-			}
-
+		if (geno.bias) {
+			// str += "\t{Node 0, Type: BIAS}\n";
+			BiasNeuron biasNeuron = new BiasNeuron(this);
+			neurons.put(0, biasNeuron);
+			this.inputNeurons.add(biasNeuron);
+		}
+		for (int i = 1; i <= geno.numInputNodes; i++) {
+			// str += "\t{Node " + i + ", Type: INPUT}\n";
+			NEATInputNeuron inputNeuron = new NEATInputNeuron(this) {
+				@Override
+				public double getInput() {
+					return 0;
+				}
+			};
+			neurons.put(i, inputNeuron);
+			this.inputNeurons.add(inputNeuron);
+		}
+		for (int i = geno.numInputNodes + 1; i <= geno.numInputNodes + geno.numOutputNodes; i++) {
+			// str += "\t{Node " + i + ", Type: OUTPUT}\n";
+			NEATNeuron outputNeuron = new NEATNeuron(this);
+			neurons.put(i, outputNeuron);
+			this.outputNeurons.add(outputNeuron);
+		}
+		for (int i = geno.numInputNodes + geno.numOutputNodes + 1; i <= geno.numInputNodes + geno.numOutputNodes
+				+ geno.numHiddenNodes; i++) {
+			// str += "\t{Node " + i + ", Type: HIDDEN}\n";
+			NEATNeuron hiddenNeuron = new NEATNeuron(this);
+			neurons.put(i, hiddenNeuron);
+			this.hiddenNeurons.add(hiddenNeuron);
 		}
 
 		for (ConnectionGene connectionGene : geno.connectionGenes) {
