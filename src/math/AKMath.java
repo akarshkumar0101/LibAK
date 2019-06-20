@@ -20,4 +20,13 @@ public class AKMath {
 		return a * a;
 	}
 
+	public static double round(double a, double nearestDec, double offsetFromZero) {
+		a -= offsetFromZero;
+		a /= nearestDec;
+		a = Math.floor(a + .5);
+		a *= nearestDec;
+		a += offsetFromZero;
+		return a;
+	}
+
 }

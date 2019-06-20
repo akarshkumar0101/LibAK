@@ -380,16 +380,7 @@ public class OldNeuralNetwork {
 		return str;
 	}
 
-	public static final DoubleFunction1D sigmoidFunction = new DoubleFunction1D() {
-		@Override
-		public double evaluate(double inp) {
-			return 1 / (1 + Math.exp(-inp));
-		}
-	};
-	public static final DoubleFunction1D sigmoidFunctionDerivative = new DoubleFunction1D() {
-		@Override
-		public double evaluate(double inp) {
-			return OldNeuralNetwork.sigmoidFunction.evaluate(inp) * (1 - OldNeuralNetwork.sigmoidFunction.evaluate(inp));
-		}
-	};
+	public static final DoubleFunction1D sigmoidFunction = inp -> 1 / (1 + Math.exp(-inp));
+	public static final DoubleFunction1D sigmoidFunctionDerivative = inp -> OldNeuralNetwork.sigmoidFunction
+			.evaluate(inp) * (1 - OldNeuralNetwork.sigmoidFunction.evaluate(inp));
 }
