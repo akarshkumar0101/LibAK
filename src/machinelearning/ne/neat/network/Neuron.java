@@ -1,25 +1,25 @@
-package machinelearning.ne.neat;
+package machinelearning.ne.neat.network;
 
 import java.util.HashMap;
 import java.util.Map;
 
-public class NEATNeuron {
-	double activation;
+public class Neuron {
+	protected double activation;
 
-	boolean calculated;
+	protected boolean calculated;
 
-	Map<NEATNeuron, Double> prevConnections;
+	protected final Map<Neuron, Double> prevConnections;
 
-	NEATNeuralNetwork network;
+	protected final NeuralNetwork network;
 
-	NEATNeuron(NEATNeuralNetwork network) {
+	Neuron(NeuralNetwork network) {
 		this.network = network;
 		this.calculated = false;
 
 		this.prevConnections = new HashMap<>();
 	}
 
-	public void addConnection(NEATNeuron prevNeuron, double connectionWeight) {
+	public void addConnection(Neuron prevNeuron, double connectionWeight) {
 		this.prevConnections.put(prevNeuron, connectionWeight);
 	}
 
@@ -29,7 +29,7 @@ public class NEATNeuron {
 		this.calculated = true;
 		double input = 0;
 
-		for (NEATNeuron neuron : this.prevConnections.keySet()) {
+		for (Neuron neuron : this.prevConnections.keySet()) {
 			double connectionWeight = this.prevConnections.get(neuron);
 			if (!neuron.calculated) {
 				neuron.calculate();
@@ -48,10 +48,34 @@ public class NEATNeuron {
 	public void activationFunc() {
 		this.activation = 1 / (1 + Math.exp(-this.activation));
 	}
+
+	public double getActivation() {
+		return activation;
+	}
+
+	public void setActivation(double activation) {
+		this.activation = activation;
+	}
+
+	public boolean isCalculated() {
+		return calculated;
+	}
+
+	public void setCalculated(boolean calculated) {
+		this.calculated = calculated;
+	}
+
+	public Map<Neuron, Double> getPrevConnections() {
+		return prevConnections;
+	}
+
+	public NeuralNetwork getNetwork() {
+		return network;
+	}
 }
 
-abstract class NEATInputNeuron extends NEATNeuron {
-	public NEATInputNeuron(NEATNeuralNetwork network) {
+abstract class NEATInputNeuron extends Neuron {
+	public NEATInputNeuron(NeuralNetwork network) {
 		super(network);
 	}
 
@@ -66,7 +90,7 @@ abstract class NEATInputNeuron extends NEATNeuron {
 
 class BiasNeuron extends NEATInputNeuron {
 
-	public BiasNeuron(NEATNeuralNetwork network) {
+	public BiasNeuron(NeuralNetwork network) {
 		super(network);
 	}
 
