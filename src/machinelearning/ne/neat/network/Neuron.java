@@ -45,12 +45,16 @@ public class Neuron {
 		this.calculated = false;
 	}
 
+	public static double sigmoidFunc(double input) {
+		return 1 / (1 + Math.exp(-input));
+	}
+
 	public void activationFunc() {
-		this.activation = 1 / (1 + Math.exp(-this.activation));
+		this.activation = Neuron.sigmoidFunc(this.activation);
 	}
 
 	public double getActivation() {
-		return activation;
+		return this.activation;
 	}
 
 	public void setActivation(double activation) {
@@ -58,7 +62,7 @@ public class Neuron {
 	}
 
 	public boolean isCalculated() {
-		return calculated;
+		return this.calculated;
 	}
 
 	public void setCalculated(boolean calculated) {
@@ -66,11 +70,11 @@ public class Neuron {
 	}
 
 	public Map<Neuron, Double> getPrevConnections() {
-		return prevConnections;
+		return this.prevConnections;
 	}
 
 	public NeuralNetwork getNetwork() {
-		return network;
+		return this.network;
 	}
 }
 
@@ -105,5 +109,3 @@ class BiasNeuron extends NEATInputNeuron {
 	}
 
 }
-
-

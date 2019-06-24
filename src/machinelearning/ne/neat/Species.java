@@ -20,6 +20,7 @@ public class Species extends ArrayList<Genome> {
 	}
 
 	public void assignNewRandomRepresentative() {
+		representative = null;
 		if (!this.isEmpty()) {
 			int randIndex = (int) (Math.random() * this.size());
 			this.representative = this.get(randIndex);

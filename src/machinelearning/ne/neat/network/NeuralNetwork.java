@@ -7,6 +7,7 @@ import java.util.Map;
 
 import machinelearning.ne.neat.genome.ConnectionGene;
 import machinelearning.ne.neat.genome.Genome;
+import machinelearning.neuralnet.InputSource;
 
 public class NeuralNetwork {
 
@@ -16,11 +17,15 @@ public class NeuralNetwork {
 	private final List<Neuron> hiddenNeurons;
 
 	private boolean hasBias;
+	
+	private final InputSource inputSource;
 
-	public NeuralNetwork(Genome geno) {
+	public NeuralNetwork(Genome geno, InputSource inputSource) {
 		this.inputNeurons = new ArrayList<>();
 		this.outputNeurons = new ArrayList<>();
 		this.hiddenNeurons = new ArrayList<>();
+		
+		this.inputSource = inputSource;
 
 		this.buildFromGeno(geno);
 	}
@@ -57,10 +62,11 @@ public class NeuralNetwork {
 		}
 		for (int i = 1; i <= geno.getBaseTemplate().numInputNodes(); i++) {
 			// str += "\t{Node " + i + ", Type: INPUT}\n";
+			final int inputI=i-1;
 			NEATInputNeuron inputNeuron = new NEATInputNeuron(this) {
 				@Override
 				public double getInput() {
-					return 0;
+					return inputSource.getInput(inputI);
 				}
 			};
 			neurons.put(i, inputNeuron);

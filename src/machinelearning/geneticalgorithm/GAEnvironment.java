@@ -64,7 +64,7 @@ public class GAEnvironment<G> {
 
 		this.selectSurvivors();
 
-		this.cleanup();
+		this.cleanupFitness();
 
 		List<G> offspring = this.crossPopulation();// new members added
 
@@ -75,7 +75,7 @@ public class GAEnvironment<G> {
 		this.currentGeneration++;
 	}
 
-	private void cleanup() {
+	private void cleanupFitness() {
 		this.fitnesses.entrySet().removeIf(e -> !GAEnvironment.this.population.contains(e.getKey()));
 	}
 

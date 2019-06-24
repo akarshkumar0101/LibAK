@@ -12,17 +12,12 @@ import math.AKRandom;
 
 public class NEAT {
 
-	private List<Genome> population;
+	private final List<Genome> population;
 
-	//private Map<Genome, List<Genome>> species;
-	private List<Species> species;
-	
-	private Map<Genome, Tuple2D<Double, Double>> fitnesses;
+	// private Map<Genome, List<Genome>> species;
+	private final List<Species> species;
 
-	private double c1 = 1, c2 = 1, c3 = 1;
-	private double deltaThreshhold = 2.3;
-
-	private double killPercent = 0.2;
+	private final Map<Genome, Tuple2D<Double, Double>> fitnesses;
 
 	private NEATTrainer trainer;
 
@@ -37,15 +32,18 @@ public class NEAT {
 		this.setTrainer(trainer);
 
 		this.population = new ArrayList<>(preferredPopulationSize);
-		species = new ArrayList<>();
+		this.species = new ArrayList<>();
 		this.fitnesses = new HashMap<>();
 
 		this.populateRest();
 
 		this.currentGeneration = 0;
+		this.currentInnovationNumber = 0;
 	}
 
 	public void runGeneration() {
+		this.populateRest();
+
 		this.calculateFitnesses();
 
 		this.groupIntoSpecies(this.population);
@@ -55,41 +53,40 @@ public class NEAT {
 		this.sortSpeciesByFitness();
 
 		// kill off
+		this.killInSpecies(this.trainer.getKillPercent());
+
+		this.cleanupFitness();
 
 		// get offspring from cross
+		List<Genome> offspring = this.crossPopulation();
 
 		// mutate
-
-		// add offspring
-
-		this.currentGeneration++;
-	}
-
-	public void runGenerationGA() {
-
-		this.calculateFitnesses();
-
-		this.sortPopulation();
-
-		this.selectSurvivors();
-
-		this.cleanup();
-
-		List<Genome> offspring = this.crossPopulation();// new members added
-
 		this.mutatePopulation();
 
+		// add offspring
 		this.population.addAll(offspring);
+
+		this.killExtinctSpecies();
 
 		this.currentGeneration++;
 	}
 
+	/**
+	 * Populates the rest of the population list with random new genomes from
+	 * trainer.generateRandom().
+	 */
 	private void populateRest() {
 		for (int i = this.population.size(); i < this.preferredPopulationSize; i++) {
 			this.population.add(this.trainer.generateRandom(this));
 		}
 	}
 
+	/**
+	 * Groups genos into the corresponding species based on delta threshold. If a
+	 * geno does not fit into an existing species, a new species is created.
+	 *
+	 * @param genos
+	 */
 	private void groupIntoSpecies(List<Genome> genos) {
 		for (Genome geno : genos) {
 			Species spec = this.calculateCorrespondingSpecies(geno);
@@ -103,35 +100,52 @@ public class NEAT {
 		}
 	}
 
+	/**
+	 * Sorts all of the species list from largest to smallest fitness
+	 */
 	private void sortSpeciesByFitness() {
-		for(Species spec: this.species) {
+		for (Species spec : this.species) {
 			spec.sort((o1, o2) -> {
-				double ret = NEAT.this.fitnesses.get(o1).getB() - NEAT.this.fitnesses.get(o2).getB();
+				double ret = NEAT.this.fitnesses.get(o2).getB() - NEAT.this.fitnesses.get(o1).getB();
 				return ret < 0 ? -1 : ret > 0 ? 1 : 0;
 			});
 		}
 	}
 
-	private int killWorstInSpecies(double percentKilled) {
+	/**
+	 * Kills of percentKilled percent in each species. It kills the worst of
+	 * species. Assumes that sortSpeciesByFitness() has been called prior to it.
+	 * Returns the number of genomes actually killed.
+	 *
+	 * @param percentKilled
+	 * @return
+	 */
+	private int killInSpecies(double percentKilled) {
 		int totalNumKilled = 0;
-		for(Species spec: this.species) {
-			int numKilled = (int) Math.ceil(percentKilled * spec.size());
+		for (Species spec : this.species) {
+			int numToKill = (int) Math.ceil(percentKilled * spec.size());
+
+			List<Genome> killed = trainer.killOff(spec, numToKill, this);
 			
-			for(int i=0; i <numKilled;i++) {
-				spec.remove(0);
+			for(Genome geno: killed) {
+				this.killGenome(geno);
 			}
-			
-			
-			totalNumKilled += numKilled;
+
+			totalNumKilled += killed.size();
 		}
 
 		return totalNumKilled;
 	}
 
-	private void kill(Genome geno) {
+	/**
+	 * Kills the genome from all accounts (population and species)
+	 *
+	 * @param geno
+	 */
+	private void killGenome(Genome geno) {
 		this.population.remove(geno);
 
-		for(Species spec: this.species) {
+		for (Species spec : this.species) {
 			if (spec.contains(geno)) {
 				spec.remove(geno);
 
@@ -142,33 +156,11 @@ public class NEAT {
 		}
 	}
 
-	private void killExtinctSpecies() {
-
-	}
-
-	private void cleanup() {
-		this.fitnesses.entrySet().removeIf(e -> !this.population.contains(e.getKey()));
-	}
-
 	public void calculateFitnesses() {
 		List<Double> fits = this.trainer.calculateFitness(this.population, this);
 
 		for (int i = 0; i < this.population.size(); i++) {
 			this.fitnesses.put(this.population.get(i), new Tuple2D<>(fits.get(i), 0.0));
-		}
-	}
-
-	// represented by species, not by i
-	private void calculateAdjustedFitnesses2() {
-		for(Species spec: this.species) {
-			int numInSpecies = spec.size();
-
-			for (Genome geno : spec) {
-				Tuple2D<Double, Double> oriFitness = this.fitnesses.get(geno);
-				double adjustedFitness = oriFitness.getA() / numInSpecies;
-				Tuple2D<Double, Double> newFitness = new Tuple2D<>(oriFitness.getA(), adjustedFitness);
-				this.fitnesses.put(geno, newFitness);
-			}
 		}
 	}
 
@@ -186,6 +178,20 @@ public class NEAT {
 		}
 	}
 
+	// represented by species, not by i
+	private void calculateAdjustedFitnesses2() {
+		for (Species spec : this.species) {
+			int numInSpecies = spec.size();
+
+			for (Genome geno : spec) {
+				Tuple2D<Double, Double> oriFitness = this.fitnesses.get(geno);
+				double adjustedFitness = oriFitness.getA() / numInSpecies;
+				Tuple2D<Double, Double> newFitness = new Tuple2D<>(oriFitness.getA(), adjustedFitness);
+				this.fitnesses.put(geno, newFitness);
+			}
+		}
+	}
+
 	private void sortPopulation() {
 		Collections.sort(this.population, (o1, o2) -> {
 			double dec = this.fitnesses.get(o2).getA() - this.fitnesses.get(o1).getA();
@@ -193,23 +199,39 @@ public class NEAT {
 		});
 	}
 
+	// TODO make sure each species gets only how many offsprings it deserves
 	private List<Genome> crossPopulation() {
-		List<Tuple2D<Genome, Genome>> crossoverPartners = this.trainer.selectCrossoverPartners(this.population,
-				this);
+		List<Genome> offspring = new ArrayList<>();
 
-		List<Genome> offspring = new ArrayList<>(crossoverPartners.size());
-
-		for (Tuple2D<Genome, Genome> partners : crossoverPartners) {
-			if (AKRandom.randomChance(this.trainer.getCrossoverChance(partners, this))) {
-				Genome geno = this.trainer.crossover(partners.getA(), partners.getB(), this);
-				offspring.add(geno);
-			}
+		double totalSumAdjustedFitnesses = 0.0;
+		for (Genome geno : this.population) {
+			totalSumAdjustedFitnesses += this.fitnesses.get(geno).getB();
 		}
+
+		for (Species spec : this.species) {
+
+			double speciesSumAdjustedFitnesses = 0.0;
+			for (Genome geno : spec) {
+				speciesSumAdjustedFitnesses += this.fitnesses.get(geno).getB();
+			}
+			int numOffspring = (int) (speciesSumAdjustedFitnesses / totalSumAdjustedFitnesses);
+
+			List<Tuple2D<Genome, Genome>> crossoverPartners = this.trainer.selectCrossoverPartners(spec, this,
+					numOffspring);
+
+			for (Tuple2D<Genome, Genome> partners : crossoverPartners) {
+				if (AKRandom.randomChance(this.trainer.getCrossoverChance(partners, this))) {
+					Genome geno = this.trainer.crossover(partners.getA(), partners.getB(), this);
+					offspring.add(geno);
+				}
+			}
+
+		}
+
 		return offspring;
 	}
 
 	private void mutatePopulation() {
-
 		for (int i = 0; i < this.population.size(); i++) {
 			Genome geno = this.population.get(i);
 
@@ -219,40 +241,47 @@ public class NEAT {
 				this.population.add(i, newgeno);
 			}
 		}
-		// System.out.println("Mutated " + toAdd.size() + " members");
-
 	}
 
-	private void selectSurvivors() {
-		int numShouldBeKilled = this.population.size() - this.preferredPopulationSize;
-		List<Genome> killed = this.trainer.killOff(this.population, numShouldBeKilled, this);
-		for (Genome geno : killed) {
-			this.population.remove(geno);
-		}
-	}
+	/*
+	 * private void selectSurvivors() { int numShouldBeKilled =
+	 * this.population.size() - this.preferredPopulationSize; List<Genome> killed =
+	 * this.trainer.killOff(this.population, numShouldBeKilled, this); for (Genome
+	 * geno : killed) { this.population.remove(geno); } }
+	 */
 
 	private Species calculateCorrespondingSpecies(Genome geno) {
-		for(Species spec: this.species) {
+		for (Species spec : this.species) {
 			Genome rep = spec.getRepresentative();
-			if (NEATTrainer.similarity(geno, rep, this.c1, this.c2, this.c3) <= this.deltaThreshhold)
+			if (NEATTrainer.similarity(geno, rep, this.trainer.getC1(), this.trainer.getC2(),
+					this.trainer.getC3()) <= this.trainer.getDeltaThreshold())
 				return spec;
 		}
 
 		return null;
 	}
 
-	private void createNewSpecies(Genome geno) {
-		species.add(new Species(geno));
-	}
-
 	private int numSimilarTo(Genome i) {
 		int numSimilar = 0;
 		for (Genome geno : this.population) {
-			if (NEATTrainer.similarity(i, geno, this.c1, this.c2, this.c3) <= this.deltaThreshhold) {
+			if (NEATTrainer.similarity(i, geno, this.trainer.getC1(), this.trainer.getC2(),
+					this.trainer.getC3()) <= this.trainer.getDeltaThreshold()) {
 				numSimilar++;
 			}
 		}
 		return numSimilar;
+	}
+
+	private void createNewSpecies(Genome geno) {
+		this.species.add(new Species(geno));
+	}
+
+	private void killExtinctSpecies() {
+		this.species.removeIf(spec -> spec.size() <= 1);
+	}
+
+	private void cleanupFitness() {
+		this.fitnesses.entrySet().removeIf(e -> !this.population.contains(e.getKey()));
 	}
 
 	public void setTrainer(NEATTrainer trainer) {
@@ -269,6 +298,14 @@ public class NEAT {
 
 	public Map<Genome, Tuple2D<Double, Double>> getFitnesses() {
 		return this.fitnesses;
+	}
+
+	public int getCurrentGeneration() {
+		return this.currentGeneration;
+	}
+
+	public int getCurrentInnovationNumber() {
+		return this.currentInnovationNumber;
 	}
 
 }

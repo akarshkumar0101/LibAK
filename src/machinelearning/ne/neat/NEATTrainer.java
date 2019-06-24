@@ -8,10 +8,32 @@ import machinelearning.ne.neat.genome.BaseTemplate;
 import machinelearning.ne.neat.genome.ConnectionGene;
 import machinelearning.ne.neat.genome.Genome;
 
-public interface NEATTrainer{
+public interface NEATTrainer {
 
+	public abstract double getC1();
+
+	public default double getC2() {
+		return this.getC1();
+	}
+
+	public abstract double getC3();
+
+	public abstract double getDeltaThreshold();
+
+	public default double getKillPercent() {
+		return 0.2;
+	}
 	
-	public double calculateFitness(Genome a, NEAT neat);
+	/*
+	private double PROBABILITY_MUTATE_LINK = 0.01;
+    private double PROBABILITY_MUTATE_NODE = 0.1;
+    private double PROBABILITY_MUTATE_WEIGHT_SHIFT = 0.02;
+    private double PROBABILITY_MUTATE_WEIGHT_RANDOM= 0.02;
+    private double PROBABILITY_MUTATE_TOGGLE_LINK = 0;
+
+	*/
+
+	public abstract double calculateFitness(Genome a, NEAT neat);
 
 	public default List<Double> calculateFitness(List<Genome> as, NEAT neat) {
 		List<Double> fitnesses = new ArrayList<>(as.size());
@@ -24,26 +46,30 @@ public interface NEATTrainer{
 	public default double getMutationChance(Genome a, NEAT neat) {
 		return (double) neat.getPopulation().indexOf(a) / neat.getPopulation().size();
 	}
-	
-	public double getCrossoverChance(Tuple2D<Genome, Genome> partners, NEAT neat);
 
-	
-	public Genome generateRandom(NEAT neat);
+	public abstract double getCrossoverChance(Tuple2D<Genome, Genome> partners, NEAT neat);
 
-	
-	public Genome crossover(Genome a, Genome b, NEAT neat);
+	public abstract Genome generateRandom(NEAT neat);
 
-	
-	public Genome mutate(Genome a, NEAT neat);
+	public default Genome mutate(Genome a, NEAT neat) {
+		return null;
+	}
 
+	public abstract List<Tuple2D<Genome, Genome>> selectCrossoverPartners(List<Genome> population, NEAT neat,
+			int numOffspring);
 
-	public List<Tuple2D<Genome, Genome>> selectCrossoverPartners(List<Genome> population,
-			NEAT neat);
+	// assumes population is sorted by fitness
+	public default List<Genome> killOff(List<Genome> population, int numToKill, NEAT neat) {
+		List<Genome> killed = new ArrayList<>(numToKill);
+		for (int i = population.size() - 1; i > population.size() - 1 - numToKill; i--) {
+			killed.add(population.get(i));
+		}
+		return killed;
+	}
 
-	
-	public List<Genome> killOff(List<Genome> population, int numToKill, NEAT neat);
-	
-	
+	public default Genome crossover(Genome a, Genome b, NEAT neat) {
+		return NEATTrainer.crossover(a, b);
+	}
 
 	public static Genome crossover(Genome a, Genome b) {
 		Genome child = new Genome(NEATTrainer.forgeBaseTemplates(a.getBaseTemplate(), b.getBaseTemplate()),
