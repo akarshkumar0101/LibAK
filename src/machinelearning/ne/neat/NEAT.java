@@ -35,13 +35,12 @@ public class NEAT {
 		this.population = new ArrayList<>(preferredPopulationSize);
 		this.species = new ArrayList<>();
 		this.fitnesses = new HashMap<>();
-		
+
 		this.populateRest();
 
 		this.currentGeneration = 0;
 		this.currentInnovationNumber = 0;
 		this.setNeatStats(this.trainer.calculateStatsForGeneration(this));
-		
 
 		this.calculateFitnesses();
 
@@ -64,12 +63,15 @@ public class NEAT {
 		this.cleanupFitness();
 
 		// get offspring from cross
-		List<Genome> offspring = this.crossPopulation();
+		List<Genome> offspring = this.crossPopulationCBullet((int) (this.preferredPopulationSize * 0.75));
+		List<Genome> clonedOffspring = this.clonePopulationCBullet((int) (this.preferredPopulationSize * 0.25));
+		offspring.addAll(clonedOffspring);
 
 		// mutate
-		this.mutatePopulation();
+		this.mutatePopulation(offspring);
 
 		// add offspring
+		this.population.clear();
 		this.population.addAll(offspring);
 
 		this.killExtinctSpecies();
@@ -86,6 +88,7 @@ public class NEAT {
 
 		this.currentGeneration++;
 
+		this.generationalInnovations.clear();
 	}
 
 	/**
@@ -245,7 +248,7 @@ public class NEAT {
 		return offspring;
 	}
 
-	private List<Genome> crossPopulationCBullet() {
+	private List<Genome> crossPopulationCBullet(int numberToProduce) {
 		List<Genome> offspring = new ArrayList<>();
 
 		double totalSumAdjustedFitnesses = 0.0;
@@ -259,8 +262,7 @@ public class NEAT {
 			for (Genome geno : spec) {
 				speciesSumAdjustedFitnesses += this.fitnesses.get(geno).getB();
 			}
-			int numOffspring = (int) (speciesSumAdjustedFitnesses
-					* (this.preferredPopulationSize - this.population.size()) / totalSumAdjustedFitnesses);
+			int numOffspring = (int) (speciesSumAdjustedFitnesses * numberToProduce / totalSumAdjustedFitnesses);
 
 			for (int i = 0; i < numOffspring; i++) {
 				offspring.add(spec.giveBaby(this, this.trainer));
@@ -270,14 +272,26 @@ public class NEAT {
 		return offspring;
 	}
 
-	private void mutatePopulation() {
-		for (int i = 0; i < this.population.size(); i++) {
-			Genome geno = this.population.get(i);
+	private List<Genome> clonePopulationCBullet(int numberToProduce) {
+		List<Genome> offspring = new ArrayList<>();
+
+		for (int i = 0; i < numberToProduce; i++) {
+			Genome geno = this.population.get((int) (Math.random() * this.population.size())).clone();
+			offspring.add(geno);
+		}
+
+		return offspring;
+
+	}
+
+	private void mutatePopulation(List<Genome> population) {
+		for (int i = 0; i < population.size(); i++) {
+			Genome geno = population.get(i);
 
 			if (AKRandom.randomChance(this.neatStats.getMutationProbability(geno, this))) {
 				Genome newgeno = this.trainer.mutate(geno, this);
-				this.population.remove(i);
-				this.population.add(i, newgeno);
+				population.remove(i);
+				population.add(i, newgeno);
 			}
 		}
 	}
@@ -343,6 +357,21 @@ public class NEAT {
 
 	public int accessAndIncrementCurrentInnovationNumber() {
 		return this.currentInnovationNumber++;
+	}
+
+	private final HashMap<Tuple2D<Integer, Integer>, Integer> generationalInnovations = new HashMap<>();
+
+	public int accessAndIncrementCurrentInnovationNumberSmart(int inputNodeID, int outputNodeID) {
+		for (Tuple2D<Integer, Integer> structure : this.generationalInnovations.keySet()) {
+			if (structure.getA() == inputNodeID && structure.getB() == outputNodeID)
+				// found structure already in generation
+				return this.generationalInnovations.get(structure);
+		}
+		int innov = this.currentInnovationNumber++;
+
+		this.generationalInnovations.put(new Tuple2D<>(inputNodeID, outputNodeID), innov);
+
+		return innov;
 	}
 
 	public NEATStats getNeatStats() {

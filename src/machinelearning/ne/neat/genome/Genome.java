@@ -3,9 +3,11 @@ package machinelearning.ne.neat.genome;
 import java.util.ArrayList;
 import java.util.List;
 
-public class Genome {
+public class Genome extends ArrayList<ConnectionGene> {
+
+	private static final long serialVersionUID = -5784317383291473781L;
+
 	// List<NodeGene> nodeGenes;
-	private final List<ConnectionGene> connectionGenes;
 
 	private final BaseTemplate baseTemplate;
 	// bias here is 0
@@ -20,17 +22,20 @@ public class Genome {
 
 	public double fitness;
 
-	public Genome(BaseTemplate baseTemplate, int numHiddenNodes) {
+	public static int GenomeIDGenerator = 0;
+	public final int genomeID;
 
+	public Genome(BaseTemplate baseTemplate, int numHiddenNodes) {
+		super();
 		this.baseTemplate = baseTemplate;
 		this.numHiddenNodes = numHiddenNodes;
 		// this.nodeGenes = new ArrayList<>();
 
-		this.connectionGenes = new ArrayList<>();
+		this.genomeID = Genome.GenomeIDGenerator++;
 	}
 
 	public boolean hasConnection(int inputNodeID, int outputNodeID) {
-		for (ConnectionGene cg : this.connectionGenes) {
+		for (ConnectionGene cg : this) {
 			if (cg.getInputNodeID() == inputNodeID && cg.getOutputNodeID() == outputNodeID)
 				return true;
 		}
@@ -67,7 +72,7 @@ public class Genome {
 		/*
 		 * for (NodeGene nodeGene : this.nodeGenes) { str += "\t" + nodeGene + "\n"; }
 		 */
-		for (ConnectionGene connectionGene : this.connectionGenes) {
+		for (ConnectionGene connectionGene : this) {
 			str += "\t" + connectionGene + "\n";
 		}
 
@@ -78,14 +83,13 @@ public class Genome {
 	public String toString() {
 		String str = "{";
 
-		str += this.numHiddenNodes + " hidden, " + this.connectionGenes.size() + " connections, fitness: "
-				+ this.fitness;
+		str += this.numHiddenNodes + " hidden, " + this.size() + " connections, fitness: " + this.fitness;
 
 		return str + "}";
 	}
 
 	public List<ConnectionGene> getConnectionGenes() {
-		return this.connectionGenes;
+		return this;
 	}
 
 	public BaseTemplate getBaseTemplate() {
@@ -109,8 +113,8 @@ public class Genome {
 	public Genome clone() {
 		Genome geno = new Genome(this.baseTemplate, this.numHiddenNodes);
 		geno.fitness = this.fitness;
-		for (ConnectionGene cg : this.connectionGenes) {
-			geno.connectionGenes.add(cg.clone());
+		for (ConnectionGene cg : this) {
+			geno.add(cg.clone());
 		}
 		return geno;
 	}

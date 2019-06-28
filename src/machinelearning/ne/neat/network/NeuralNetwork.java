@@ -19,6 +19,8 @@ public class NeuralNetwork {
 	private boolean hasBias;
 
 	private final InputSource inputSource;
+	
+	public final int networkID;
 
 	public NeuralNetwork(Genome geno, InputSource inputSource) {
 		this.inputNeurons = new ArrayList<>();
@@ -28,6 +30,8 @@ public class NeuralNetwork {
 		this.inputSource = inputSource;
 
 		this.buildFromGeno(geno);
+		
+		networkID = geno.genomeID;
 	}
 
 	public void calculate() {

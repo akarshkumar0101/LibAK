@@ -2,7 +2,10 @@ package machinelearning.ne.neat;
 
 import java.awt.Color;
 import java.awt.Graphics;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Random;
 
 import javax.swing.JComponent;
 
@@ -17,12 +20,22 @@ public class VisualNEATNetworkPanel extends JComponent {
 
 	private NeuralNetwork network;
 
+	private final Map<Neuron, Tuple2D<Double, Double>> nodeLocations;
+
 	public VisualNEATNetworkPanel(NeuralNetwork network) {
-		this.network = network;
+		this.nodeLocations = new HashMap<>();
+
+		this.setNetwork(network);
 
 	}
 
 	private Tuple2D<Integer, Integer> locationOf(Neuron neuron) {
+		Tuple2D<Double, Double> loc = this.nodeLocations.get(neuron);
+		System.out.println(loc);
+		return new Tuple2D<>((int) (loc.getA() * this.getWidth()), (int) (loc.getB() * this.getHeight()));
+	}
+
+	private Tuple2D<Integer, Integer> locationOff(Neuron neuron) {
 		int layer = 0, nodeID = 0;
 		int temp = 0;
 		int numNeuronsInLayer = 0;
@@ -58,6 +71,9 @@ public class VisualNEATNetworkPanel extends JComponent {
 			for (int nodeID = 0; nodeID < neurons.size(); nodeID++) {
 				int x = (int) AKMath.scale(layer, -0.5, 2.5, 0, this.getWidth());
 				int y = (int) AKMath.scale(nodeID, -1, neurons.size(), 0, this.getHeight());
+
+				x = this.locationOf(neurons.get(nodeID)).getA();
+				y = this.locationOf(neurons.get(nodeID)).getB();
 
 				int circledia = Math.max(10,
 						Math.min(this.getWidth() / 4 / (3 + 1), this.getHeight() / 4 / neurons.size()));
@@ -97,8 +113,14 @@ public class VisualNEATNetworkPanel extends JComponent {
 				Tuple2D<Integer, Integer> locNeuron = this.locationOf(neuron);
 				Tuple2D<Integer, Integer> locPrevNeuron = this.locationOf(prevNeuron);
 
+				int midx = (locNeuron.getA() + locPrevNeuron.getA()) / 2,
+						midy = (locNeuron.getB() + locPrevNeuron.getB()) / 2;
+
 				g.setColor(Color.ORANGE);
-				g.drawLine(locNeuron.getA(), locNeuron.getB(), locPrevNeuron.getA(), locPrevNeuron.getB());
+				g.drawLine(locPrevNeuron.getA(), locPrevNeuron.getB(), midx, midy);
+
+				g.setColor(Color.GREEN);
+				g.drawLine(midx, midy, locNeuron.getA(), locNeuron.getB());
 			}
 
 		}
@@ -111,6 +133,40 @@ public class VisualNEATNetworkPanel extends JComponent {
 
 	public void setNetwork(NeuralNetwork network) {
 		this.network = network;
+
+		this.nodeLocations.clear();
+		
+		if(network==null) {
+			return;
+		}
+		List<Neuron> inputNeurons = network.getInputNeurons();
+		List<Neuron> hiddenNeurons = network.getHiddenNeurons();
+		List<Neuron> outputNeurons = network.getOutputNeurons();
+
+		Random random = new Random(network.networkID*1000+500);
+
+		for (int i = 0; i < inputNeurons.size(); i++) {
+			Neuron neuron = inputNeurons.get(i);
+			double x = 0.1;
+			double y = AKMath.scale(i, -0.5, inputNeurons.size(), 0, 1);
+			Tuple2D<Double, Double> location = new Tuple2D<>(x, y);
+			this.nodeLocations.put(neuron, location);
+		}
+		for (int i = 0; i < outputNeurons.size(); i++) {
+			Neuron neuron = outputNeurons.get(i);
+			double x = 0.9;
+			double y = AKMath.scale(i, -0.5, outputNeurons.size(), 0, 1);
+			Tuple2D<Double, Double> location = new Tuple2D<>(x, y);
+			this.nodeLocations.put(neuron, location);
+		}
+
+		for (int i = 0; i < hiddenNeurons.size(); i++) {
+			Neuron neuron = hiddenNeurons.get(i);
+			double x = AKMath.scale(i, -1.5, hiddenNeurons.size(), 0, 1);
+			double y = random.nextDouble();
+			Tuple2D<Double, Double> location = new Tuple2D<>(x, y);
+			this.nodeLocations.put(neuron, location);
+		}
 	}
 
 }

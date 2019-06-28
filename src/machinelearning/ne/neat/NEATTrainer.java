@@ -45,9 +45,8 @@ public interface NEATTrainer {
 	}
 
 	public default Genome mutate(Genome geno, NEAT neat) {
-		if (true) {
+		if (true)
 			return this.mutateCBullet(geno, neat);
-		}
 
 		geno = geno.clone();
 
@@ -217,12 +216,15 @@ public interface NEATTrainer {
 		Genome child = new Genome(NEATTrainer.forgeBaseTemplates(a.getBaseTemplate(), b.getBaseTemplate()),
 				Math.max(a.getNumHiddenNodes(), b.getNumHiddenNodes()));
 
+		// assume a is more fit
+
 		int i1 = 0;
 		int i2 = 0;
 		// List<Gene> childGenes = new ArrayList<>();
 		while (i1 < a.getConnectionGenes().size() || i2 < b.getConnectionGenes().size()) {
 			if (i1 >= a.getConnectionGenes().size()) {
-				child.getConnectionGenes().add(b.getConnectionGenes().get(i2).clone());
+				// dont inherit from unfit parent
+				// child.getConnectionGenes().add(b.getConnectionGenes().get(i2).clone());
 				i2++;
 				continue;
 			}
@@ -248,7 +250,8 @@ public interface NEATTrainer {
 				i1++;
 			} else {
 				// g2 is disjoint
-				child.getConnectionGenes().add(g2.clone());
+				// dont inherit from unfit parent
+				// child.getConnectionGenes().add(g2.clone());
 				i2++;
 			}
 		}
@@ -287,7 +290,7 @@ public interface NEATTrainer {
 		}
 
 		// 2% of the time add a node
-		if (AKRandom.randomChance(0.00)) {
+		if (AKRandom.randomChance(0.10)) {
 			this.mutateAddNode(geno, neat);
 		}
 
