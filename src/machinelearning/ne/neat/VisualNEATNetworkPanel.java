@@ -48,6 +48,8 @@ public class VisualNEATNetworkPanel extends JComponent {
 
 	@Override
 	public void paintComponent(Graphics g) {
+		if (this.network == null)
+			return;
 
 		for (int layer = 0; layer < 3; layer++) {
 			List<Neuron> neurons = layer == 0 ? this.network.getInputNeurons()
@@ -89,8 +91,8 @@ public class VisualNEATNetworkPanel extends JComponent {
 			Neuron neuron = i < this.network.getInputNeurons().size() ? this.network.getInputNeurons().get(i)
 					: i < this.network.getInputNeurons().size() + this.network.getHiddenNeurons().size()
 							? this.network.getHiddenNeurons().get(i - this.network.getInputNeurons().size())
-							: this.network.getOutputNeurons()
-									.get(i - this.network.getInputNeurons().size() - this.network.getHiddenNeurons().size());
+							: this.network.getOutputNeurons().get(
+									i - this.network.getInputNeurons().size() - this.network.getHiddenNeurons().size());
 			for (Neuron prevNeuron : neuron.getPrevConnections().keySet()) {
 				Tuple2D<Integer, Integer> locNeuron = this.locationOf(neuron);
 				Tuple2D<Integer, Integer> locPrevNeuron = this.locationOf(prevNeuron);
@@ -103,8 +105,15 @@ public class VisualNEATNetworkPanel extends JComponent {
 
 	}
 
-}
+	public NeuralNetwork getNetwork() {
+		return this.network;
+	}
 
+	public void setNetwork(NeuralNetwork network) {
+		this.network = network;
+	}
+
+}
 
 //class VisualNEATNetworkPanelFFFF extends JComponent {
 //

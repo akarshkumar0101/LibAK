@@ -12,7 +12,7 @@ public class NodeGene extends Gene {
 	}
 
 	@Override
-	public NodeGene copy() {
+	public NodeGene clone() {
 		return new NodeGene(this.innovationNumber, this.nodeID, this.type);
 	}
 

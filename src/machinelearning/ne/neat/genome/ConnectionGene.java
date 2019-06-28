@@ -17,7 +17,7 @@ public class ConnectionGene extends Gene {
 	}
 
 	@Override
-	public ConnectionGene copy() {
+	public ConnectionGene clone() {
 		return new ConnectionGene(this.innovationNumber, this.inputNodeID, this.outputNodeID, this.connectionWeight,
 				this.enabled);
 	}

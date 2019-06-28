@@ -5,7 +5,7 @@ import java.util.List;
 
 public class Genome {
 	// List<NodeGene> nodeGenes;
-	private final List<ConnectionGene> getConnectionGenes;
+	private final List<ConnectionGene> connectionGenes;
 
 	private final BaseTemplate baseTemplate;
 	// bias here is 0
@@ -16,7 +16,9 @@ public class Genome {
 
 	// hidden are
 	// numInputNodes+numOutputNodes+1..numInputNodes+numOutputNodes+numHiddenNodes
-	private final int numHiddenNodes;
+	private int numHiddenNodes;
+
+	public double fitness;
 
 	public Genome(BaseTemplate baseTemplate, int numHiddenNodes) {
 
@@ -24,11 +26,27 @@ public class Genome {
 		this.numHiddenNodes = numHiddenNodes;
 		// this.nodeGenes = new ArrayList<>();
 
-		this.getConnectionGenes = new ArrayList<>();
+		this.connectionGenes = new ArrayList<>();
 	}
 
-	@Override
-	public String toString() {
+	public boolean hasConnection(int inputNodeID, int outputNodeID) {
+		for (ConnectionGene cg : this.connectionGenes) {
+			if (cg.getInputNodeID() == inputNodeID && cg.getOutputNodeID() == outputNodeID)
+				return true;
+		}
+		return false;
+	}
+
+	/**
+	 * @return the id of the new hidden node
+	 */
+	public int addNewHiddenNode() {
+		int newNodeID = this.getNumTotalNodes();
+		this.numHiddenNodes++;
+		return newNodeID;
+	}
+
+	public String toStringReal() {
 		String str = "{\n";
 
 		if (this.baseTemplate.hasBias()) {
@@ -49,25 +67,51 @@ public class Genome {
 		/*
 		 * for (NodeGene nodeGene : this.nodeGenes) { str += "\t" + nodeGene + "\n"; }
 		 */
-		for (ConnectionGene connectionGene : this.getConnectionGenes) {
+		for (ConnectionGene connectionGene : this.connectionGenes) {
 			str += "\t" + connectionGene + "\n";
 		}
 
 		return str + "}";
 	}
 
+	@Override
+	public String toString() {
+		String str = "{";
+
+		str += this.numHiddenNodes + " hidden, " + this.connectionGenes.size() + " connections, fitness: "
+				+ this.fitness;
+
+		return str + "}";
+	}
+
 	public List<ConnectionGene> getConnectionGenes() {
-		return getConnectionGenes;
+		return this.connectionGenes;
 	}
 
 	public BaseTemplate getBaseTemplate() {
-		return baseTemplate;
+		return this.baseTemplate;
+	}
+
+	public void setNumHiddenNodes(int numHiddenNodes) {
+		this.numHiddenNodes = numHiddenNodes;
 	}
 
 	public int getNumHiddenNodes() {
-		return numHiddenNodes;
+		return this.numHiddenNodes;
 	}
-	
+
+	public int getNumTotalNodes() {
+		return this.baseTemplate.numInputNodes() + this.numHiddenNodes + this.baseTemplate.numOutputNodes()
+				+ (this.baseTemplate.hasBias() ? 1 : 0);
+	}
+
+	@Override
+	public Genome clone() {
+		Genome geno = new Genome(this.baseTemplate, this.numHiddenNodes);
+		geno.fitness = this.fitness;
+		for (ConnectionGene cg : this.connectionGenes) {
+			geno.connectionGenes.add(cg.clone());
+		}
+		return geno;
+	}
 }
-
-

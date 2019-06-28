@@ -8,7 +8,7 @@ public abstract class Gene {
 		this.innovationNumber = innovationNumber;
 	}
 
-	public abstract Gene copy();
+	public abstract Gene clone();
 
 	public int getInnovationNumber() {
 		return this.innovationNumber;

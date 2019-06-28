@@ -17,24 +17,24 @@ public class NeuralNetwork {
 	private final List<Neuron> hiddenNeurons;
 
 	private boolean hasBias;
-	
+
 	private final InputSource inputSource;
 
 	public NeuralNetwork(Genome geno, InputSource inputSource) {
 		this.inputNeurons = new ArrayList<>();
 		this.outputNeurons = new ArrayList<>();
 		this.hiddenNeurons = new ArrayList<>();
-		
+
 		this.inputSource = inputSource;
 
 		this.buildFromGeno(geno);
 	}
 
 	public void calculate() {
+		this.invalidateAll();
 		for (Neuron outputNeuron : this.outputNeurons) {
-			if (!outputNeuron.calculated) {
-				outputNeuron.calculate();
-			}
+			outputNeuron.calculate();
+
 		}
 	}
 
@@ -52,6 +52,7 @@ public class NeuralNetwork {
 
 	public void buildFromGeno(Genome geno) {
 		this.hasBias = geno.getBaseTemplate().hasBias();
+		
 		Map<Integer, Neuron> neurons = new HashMap<>();
 
 		if (geno.getBaseTemplate().hasBias()) {
@@ -62,11 +63,11 @@ public class NeuralNetwork {
 		}
 		for (int i = 1; i <= geno.getBaseTemplate().numInputNodes(); i++) {
 			// str += "\t{Node " + i + ", Type: INPUT}\n";
-			final int inputI=i-1;
+			final int inputI = i - 1;
 			NEATInputNeuron inputNeuron = new NEATInputNeuron(this) {
 				@Override
 				public double getInput() {
-					return inputSource.getInput(inputI);
+					return NeuralNetwork.this.inputSource.getInput(inputI);
 				}
 			};
 			neurons.put(i, inputNeuron);
@@ -79,8 +80,9 @@ public class NeuralNetwork {
 			neurons.put(i, outputNeuron);
 			this.outputNeurons.add(outputNeuron);
 		}
-		for (int i = geno.getBaseTemplate().numInputNodes() + geno.getBaseTemplate().numOutputNodes() + 1; i <= geno.getBaseTemplate()
-				.numInputNodes() + geno.getBaseTemplate().numOutputNodes() + geno.getNumHiddenNodes(); i++) {
+		for (int i = geno.getBaseTemplate().numInputNodes() + geno.getBaseTemplate().numOutputNodes() + 1; i <= geno
+				.getBaseTemplate().numInputNodes() + geno.getBaseTemplate().numOutputNodes()
+				+ geno.getNumHiddenNodes(); i++) {
 			// str += "\t{Node " + i + ", Type: HIDDEN}\n";
 			Neuron hiddenNeuron = new Neuron(this);
 			neurons.put(i, hiddenNeuron);
@@ -96,20 +98,20 @@ public class NeuralNetwork {
 		}
 
 	}
-	
+
 	public boolean hasBias() {
-		return hasBias;
+		return this.hasBias;
 	}
 
 	public List<Neuron> getInputNeurons() {
-		return inputNeurons;
+		return this.inputNeurons;
 	}
 
 	public List<Neuron> getOutputNeurons() {
-		return outputNeurons;
+		return this.outputNeurons;
 	}
 
 	public List<Neuron> getHiddenNeurons() {
-		return hiddenNeurons;
+		return this.hiddenNeurons;
 	}
 }

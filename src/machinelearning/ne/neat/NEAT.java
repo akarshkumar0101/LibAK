@@ -1,7 +1,6 @@
 package machinelearning.ne.neat;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -15,7 +14,7 @@ public class NEAT {
 	private final List<Genome> population;
 
 	// private Map<Genome, List<Genome>> species;
-	private final List<Species> species;
+	public final List<Species> species;
 
 	private final Map<Genome, Tuple2D<Double, Double>> fitnesses;
 
@@ -27,6 +26,8 @@ public class NEAT {
 
 	private int currentInnovationNumber = 0;
 
+	private NEATStats neatStats;
+
 	public NEAT(int preferredPopulationSize, NEATTrainer trainer) {
 		this.preferredPopulationSize = preferredPopulationSize;
 		this.setTrainer(trainer);
@@ -34,15 +35,13 @@ public class NEAT {
 		this.population = new ArrayList<>(preferredPopulationSize);
 		this.species = new ArrayList<>();
 		this.fitnesses = new HashMap<>();
-
+		
 		this.populateRest();
 
 		this.currentGeneration = 0;
 		this.currentInnovationNumber = 0;
-	}
-
-	public void runGeneration() {
-		this.populateRest();
+		this.setNeatStats(this.trainer.calculateStatsForGeneration(this));
+		
 
 		this.calculateFitnesses();
 
@@ -52,8 +51,15 @@ public class NEAT {
 
 		this.sortSpeciesByFitness();
 
+	}
+
+	public void runGeneration() {
+		this.setNeatStats(this.trainer.calculateStatsForGeneration(this));
+
+		// put this stuff at the end of the method
+
 		// kill off
-		this.killInSpecies(this.trainer.getKillPercent());
+		this.killInSpecies(this.neatStats.getPercentPopulationToKill(this));
 
 		this.cleanupFitness();
 
@@ -68,7 +74,18 @@ public class NEAT {
 
 		this.killExtinctSpecies();
 
+		this.populateRest();
+
+		this.calculateFitnesses();
+
+		this.groupIntoSpecies(this.population);
+
+		this.calculateAdjustedFitnesses();
+
+		this.sortSpeciesByFitness();
+
 		this.currentGeneration++;
+
 	}
 
 	/**
@@ -88,6 +105,9 @@ public class NEAT {
 	 * @param genos
 	 */
 	private void groupIntoSpecies(List<Genome> genos) {
+		for (Species spec : this.species) {
+			spec.clear();
+		}
 		for (Genome geno : genos) {
 			Species spec = this.calculateCorrespondingSpecies(geno);
 			if (spec == null) {
@@ -125,9 +145,9 @@ public class NEAT {
 		for (Species spec : this.species) {
 			int numToKill = (int) Math.ceil(percentKilled * spec.size());
 
-			List<Genome> killed = trainer.killOff(spec, numToKill, this);
-			
-			for(Genome geno: killed) {
+			List<Genome> killed = this.trainer.killOff(spec, numToKill, this);
+
+			for (Genome geno : killed) {
 				this.killGenome(geno);
 			}
 
@@ -161,13 +181,13 @@ public class NEAT {
 
 		for (int i = 0; i < this.population.size(); i++) {
 			this.fitnesses.put(this.population.get(i), new Tuple2D<>(fits.get(i), 0.0));
+			this.population.get(i).fitness = fits.get(i);
 		}
 	}
 
 	// clean up fitnesses hashmap before this
 	// represented by i, proper way in paper
 	private void calculateAdjustedFitnesses() {
-
 		for (Genome geno : this.population) {
 			int numSimilar = this.numSimilarTo(geno);
 
@@ -192,13 +212,6 @@ public class NEAT {
 		}
 	}
 
-	private void sortPopulation() {
-		Collections.sort(this.population, (o1, o2) -> {
-			double dec = this.fitnesses.get(o2).getA() - this.fitnesses.get(o1).getA();
-			return dec == 0 ? 0 : dec > 0 ? 1 : -1;
-		});
-	}
-
 	// TODO make sure each species gets only how many offsprings it deserves
 	private List<Genome> crossPopulation() {
 		List<Genome> offspring = new ArrayList<>();
@@ -214,13 +227,14 @@ public class NEAT {
 			for (Genome geno : spec) {
 				speciesSumAdjustedFitnesses += this.fitnesses.get(geno).getB();
 			}
-			int numOffspring = (int) (speciesSumAdjustedFitnesses / totalSumAdjustedFitnesses);
+			int numOffspring = (int) (speciesSumAdjustedFitnesses
+					* (this.preferredPopulationSize - this.population.size()) / totalSumAdjustedFitnesses);
 
 			List<Tuple2D<Genome, Genome>> crossoverPartners = this.trainer.selectCrossoverPartners(spec, this,
 					numOffspring);
 
 			for (Tuple2D<Genome, Genome> partners : crossoverPartners) {
-				if (AKRandom.randomChance(this.trainer.getCrossoverChance(partners, this))) {
+				if (AKRandom.randomChance(this.neatStats.getCrossoverProbability(partners, this))) {
 					Genome geno = this.trainer.crossover(partners.getA(), partners.getB(), this);
 					offspring.add(geno);
 				}
@@ -231,11 +245,36 @@ public class NEAT {
 		return offspring;
 	}
 
+	private List<Genome> crossPopulationCBullet() {
+		List<Genome> offspring = new ArrayList<>();
+
+		double totalSumAdjustedFitnesses = 0.0;
+		for (Genome geno : this.population) {
+			totalSumAdjustedFitnesses += this.fitnesses.get(geno).getB();
+		}
+
+		for (Species spec : this.species) {
+
+			double speciesSumAdjustedFitnesses = 0.0;
+			for (Genome geno : spec) {
+				speciesSumAdjustedFitnesses += this.fitnesses.get(geno).getB();
+			}
+			int numOffspring = (int) (speciesSumAdjustedFitnesses
+					* (this.preferredPopulationSize - this.population.size()) / totalSumAdjustedFitnesses);
+
+			for (int i = 0; i < numOffspring; i++) {
+				offspring.add(spec.giveBaby(this, this.trainer));
+			}
+		}
+
+		return offspring;
+	}
+
 	private void mutatePopulation() {
 		for (int i = 0; i < this.population.size(); i++) {
 			Genome geno = this.population.get(i);
 
-			if (AKRandom.randomChance(this.trainer.getMutationChance(geno, this))) {
+			if (AKRandom.randomChance(this.neatStats.getMutationProbability(geno, this))) {
 				Genome newgeno = this.trainer.mutate(geno, this);
 				this.population.remove(i);
 				this.population.add(i, newgeno);
@@ -253,8 +292,7 @@ public class NEAT {
 	private Species calculateCorrespondingSpecies(Genome geno) {
 		for (Species spec : this.species) {
 			Genome rep = spec.getRepresentative();
-			if (NEATTrainer.similarity(geno, rep, this.trainer.getC1(), this.trainer.getC2(),
-					this.trainer.getC3()) <= this.trainer.getDeltaThreshold())
+			if (this.trainer.areSimilar(geno, rep, this))
 				return spec;
 		}
 
@@ -264,8 +302,7 @@ public class NEAT {
 	private int numSimilarTo(Genome i) {
 		int numSimilar = 0;
 		for (Genome geno : this.population) {
-			if (NEATTrainer.similarity(i, geno, this.trainer.getC1(), this.trainer.getC2(),
-					this.trainer.getC3()) <= this.trainer.getDeltaThreshold()) {
+			if (this.trainer.areSimilar(i, geno, this)) {
 				numSimilar++;
 			}
 		}
@@ -304,8 +341,48 @@ public class NEAT {
 		return this.currentGeneration;
 	}
 
-	public int getCurrentInnovationNumber() {
-		return this.currentInnovationNumber;
+	public int accessAndIncrementCurrentInnovationNumber() {
+		return this.currentInnovationNumber++;
 	}
 
+	public NEATStats getNeatStats() {
+		return this.neatStats;
+	}
+
+	public void setNeatStats(NEATStats neatStats) {
+		this.neatStats = neatStats;
+	}
+
+	public double averageFitness() {
+		double avg = 0;
+		for (Genome geno : this.population) {
+			avg += this.fitnesses.get(geno).getA();
+		}
+		avg /= this.population.size();
+		return avg;
+	}
+
+	public Genome bestGenome() {
+		double maxFitness = -Double.MAX_VALUE;
+		Genome bestGeno = null;
+		for (Genome geno : this.population) {
+			double fit = this.fitnesses.get(geno).getA();
+
+			if (fit > maxFitness) {
+				maxFitness = fit;
+				bestGeno = geno;
+			}
+		}
+		return bestGeno;
+	}
+
+	public double averageHiddenNodes() {
+		double hiddenNodes = 0;
+		for (Genome geno : this.population) {
+			hiddenNodes += geno.getNumHiddenNodes();
+		}
+		hiddenNodes /= this.population.size();
+		return hiddenNodes;
+
+	}
 }
