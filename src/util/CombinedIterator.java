@@ -1,40 +1,52 @@
 package util;
 
+import java.util.Arrays;
 import java.util.Iterator;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.NoSuchElementException;
 
 // INCOMPLETE
 public class CombinedIterator<T> implements Iterator<T> {
 
-	private final Iterator<T>[] iterators;
+	private final List<Iterable<T>> iterables;
+	private Iterator<T> current;
 
-	private int currentIt;
-
-	public CombinedIterator(@SuppressWarnings("unchecked") Iterator<T>... iterators) {
-		this.iterators = iterators.clone();
-		this.currentIt = 0;
-
-		this.findNextAvailableIterator();
+	@SafeVarargs
+	public CombinedIterator(final Iterable<T>... iterables) {
+		this.iterables = new LinkedList<>(Arrays.asList(iterables));
 	}
 
-	private void findNextAvailableIterator() {
-		
-		while (currentIt<iterators.length && !this.iterators[this.currentIt].hasNext()) {
-			this.currentIt++;
-		}
+	public CombinedIterator(List<Iterable<T>> iterables) {
+		this.iterables = new LinkedList<>();
+		this.iterables.addAll(iterables);
 	}
 
 	@Override
 	public boolean hasNext() {
-		this.findNextAvailableIterator();
-		if (this.currentIt >= this.iterators.length)
-			return false;
-		return true;
+		checkNext();
+		return current != null && current.hasNext();
 	}
 
 	@Override
 	public T next() {
-		this.findNextAvailableIterator();
-		return this.iterators[this.currentIt].next();
+		checkNext();
+		if (current == null || !current.hasNext())
+			throw new NoSuchElementException();
+		return current.next();
+	}
+
+	@Override
+	public void remove() {
+		if (current == null)
+			throw new IllegalStateException();
+		current.remove();
+	}
+
+	private void checkNext() {
+		while ((current == null || !current.hasNext()) && !iterables.isEmpty()) {
+			current = iterables.remove(0).iterator();
+		}
 	}
 
 }
