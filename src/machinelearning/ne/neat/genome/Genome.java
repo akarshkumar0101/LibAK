@@ -42,6 +42,18 @@ public class Genome extends ArrayList<ConnectionGene> {
 		return false;
 	}
 
+	public void calculateNumHiddenNodes() {
+		int numHiddenNodes = 0;
+
+		for (ConnectionGene cg : this) {
+			numHiddenNodes = Math.max(numHiddenNodes, cg.getInputNodeID());
+			numHiddenNodes = Math.max(numHiddenNodes, cg.getOutputNodeID());
+		}
+		numHiddenNodes -= (baseTemplate.numInputNodes() + baseTemplate.numOutputNodes());
+
+		this.numHiddenNodes = numHiddenNodes;
+	}
+
 	/**
 	 * @return the id of the new hidden node
 	 */
@@ -49,6 +61,17 @@ public class Genome extends ArrayList<ConnectionGene> {
 		int newNodeID = this.getNumTotalNodes();
 		this.numHiddenNodes++;
 		return newNodeID;
+	}
+
+	public int layer(int id) {
+		int layer = 0;
+		if (id > baseTemplate.numInputNodes()) {
+			layer = 2;
+		}
+		if (id > baseTemplate.numInputNodes() + numHiddenNodes) {
+			layer = 1;
+		}
+		return layer;
 	}
 
 	public String toStringReal() {
@@ -79,13 +102,112 @@ public class Genome extends ArrayList<ConnectionGene> {
 		return str + "}";
 	}
 
-	@Override
-	public String toString() {
+	public String toStringfffffff() {
 		String str = "{";
 
 		str += this.numHiddenNodes + " hidden, " + this.size() + " connections, fitness: " + this.fitness;
 
 		return str + "}";
+	}
+
+	@Override
+	public String toString() {
+		String str = "";
+
+		str += "Genome ID: " + genomeID;
+		str += '\n';
+
+		str += "Fitness: " + fitness;
+		str += '\n';
+
+		List<ConnectionGene> genes = new ArrayList<>();
+		int listI = 0;
+		for (int innov = 0; innov <= this.get(this.size() - 1).getInnovationNumber(); innov++) {
+			if (innov == this.get(listI).getInnovationNumber()) {
+				genes.add(this.get(listI));
+				listI++;
+			} else {
+				genes.add(null);
+			}
+
+		}
+
+		for (int i = 0; i < genes.size() * 7 + 1; i++) {
+			str += "_";
+		}
+		str += '\n';
+
+		for (int i = 0; i < genes.size(); i++) {
+			str += "|";
+			str += "  ";
+			if (genes.get(i) != null) {
+				str += String.format("%2d", genes.get(i).getInnovationNumber());
+			} else {
+				str += "  ";
+			}
+			str += "  ";
+		}
+		str += "|";
+		str += '\n';
+
+		for (int i = 0; i < genes.size(); i++) {
+			str += "|";
+			if (genes.get(i) != null) {
+				str += String.format("%2d", genes.get(i).getInputNodeID());
+			} else {
+				str += "  ";
+			}
+			if (genes.get(i) != null) {
+				str += "->";
+			} else {
+				str += "  ";
+			}
+			if (genes.get(i) != null) {
+				str += String.format("%2d", genes.get(i).getOutputNodeID());
+			} else {
+				str += "  ";
+			}
+		}
+		str += "|";
+		str += '\n';
+
+		for (int i = 0; i < genes.size(); i++) {
+			str += "|";
+
+			if (genes.get(i) != null) {
+				if (genes.get(i).getConnectionWeight() >= 0) {
+					str += " ";
+				}
+				str += String.format("%,.2f", genes.get(i).getConnectionWeight());
+			} else {
+				str += "     ";
+			}
+			str += " ";
+
+		}
+		str += "|";
+		str += '\n';
+
+		for (int i = 0; i < genes.size(); i++) {
+			str += "|";
+			str += "  ";
+
+			if (genes.get(i) != null) {
+				str += genes.get(i).isEnabled() ? "  " : " D";
+			} else {
+				str += "  ";
+			}
+			str += "  ";
+		}
+		str += "|";
+		str += '\n';
+
+		for (int i = 0; i < genes.size() * 7 + 1; i++) {
+			str += "-";
+		}
+		str += '\n';
+
+		return str;
 	}
 
 	public List<ConnectionGene> getConnectionGenes() {

@@ -48,9 +48,12 @@ public class Neuron {
 	public static double sigmoidFunc(double input) {
 		return 1 / (1 + Math.exp(-input));
 	}
+	public static double steepSigmoidFunc(double input) {
+		return 1 / (1 + Math.exp(-5*input));
+	}
 
 	public void activationFunc() {
-		this.activation = Neuron.sigmoidFunc(this.activation);
+		this.activation = Neuron.steepSigmoidFunc(this.activation);
 	}
 
 	public double getActivation() {

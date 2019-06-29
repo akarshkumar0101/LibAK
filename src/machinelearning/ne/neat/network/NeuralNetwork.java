@@ -92,12 +92,12 @@ public class NeuralNetwork {
 			neurons.put(i, hiddenNeuron);
 			this.hiddenNeurons.add(hiddenNeuron);
 		}
-
-		for (ConnectionGene connectionGene : geno.getConnectionGenes()) {
-			if (connectionGene.isEnabled()) {
-				Neuron outputNeuron = neurons.get(connectionGene.getOutputNodeID());
-				Neuron inputNeuron = neurons.get(connectionGene.getInputNodeID());
-				outputNeuron.addConnection(inputNeuron, connectionGene.getConnectionWeight());
+		
+		for (ConnectionGene cg : geno.getConnectionGenes()) {
+			if (cg.isEnabled()) {
+				Neuron outputNeuron = neurons.get(cg.getOutputNodeID());
+				Neuron inputNeuron = neurons.get(cg.getInputNodeID());
+				outputNeuron.addConnection(inputNeuron, cg.getConnectionWeight());
 			}
 		}
 
