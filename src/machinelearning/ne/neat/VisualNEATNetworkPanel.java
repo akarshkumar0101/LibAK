@@ -10,6 +10,7 @@ import java.util.Random;
 import javax.swing.JComponent;
 
 import data.tuple.Tuple2D;
+import machinelearning.ne.neat.genome.Genome;
 import machinelearning.ne.neat.network.NeuralNetwork;
 import machinelearning.ne.neat.network.Neuron;
 import math.AKMath;
@@ -22,11 +23,17 @@ public class VisualNEATNetworkPanel extends JComponent {
 
 	private final Map<Neuron, Tuple2D<Double, Double>> nodeLocations;
 
+	private Double fitness;
+
 	public VisualNEATNetworkPanel(NeuralNetwork network) {
 		this.nodeLocations = new HashMap<>();
-
 		this.setNetwork(network);
+		fitness = null;
+	}
 
+	public VisualNEATNetworkPanel(Genome geno) {
+		this(new NeuralNetwork(geno, null));
+		fitness = geno.fitness;
 	}
 
 	private Tuple2D<Integer, Integer> locationOf(Neuron neuron) {
@@ -34,35 +41,18 @@ public class VisualNEATNetworkPanel extends JComponent {
 		return new Tuple2D<>((int) (loc.getA() * this.getWidth()), (int) (loc.getB() * this.getHeight()));
 	}
 
-	private Tuple2D<Integer, Integer> locationOff(Neuron neuron) {
-		int layer = 0, nodeID = 0;
-		int temp = 0;
-		int numNeuronsInLayer = 0;
-		if ((temp = this.network.getInputNeurons().indexOf(neuron)) != -1) {
-			layer = 0;
-			nodeID = temp;
-			numNeuronsInLayer = this.network.getInputNeurons().size();
-		} else if ((temp = this.network.getHiddenNeurons().indexOf(neuron)) != -1) {
-			layer = 1;
-			nodeID = temp;
-			numNeuronsInLayer = this.network.getHiddenNeurons().size();
-		} else if ((temp = this.network.getOutputNeurons().indexOf(neuron)) != -1) {
-			layer = 2;
-			nodeID = temp;
-			numNeuronsInLayer = this.network.getOutputNeurons().size();
-		}
-
-		int x = (int) AKMath.scale(layer, -0.5, 2.5, 0, this.getWidth());
-		int y = (int) AKMath.scale(nodeID, -1, numNeuronsInLayer, 0, this.getHeight());
-
-		return new Tuple2D<>(x, y);
-	}
-
 	@Override
 	public void paintComponent(Graphics g) {
 		if (this.network == null)
 			return;
-		
+		g.setColor(Color.BLACK);
+		g.drawString("" + network.networkID, 0, 15);
+
+		if (fitness != null) {
+			g.setColor(Color.MAGENTA);
+			g.drawString("" + fitness, 3 * this.getWidth() / 5, 15);
+		}
+
 		for (int layer = 0; layer < 3; layer++) {
 			List<Neuron> neurons = layer == 0 ? this.network.getInputNeurons()
 					: layer == 1 ? this.network.getHiddenNeurons() : this.network.getOutputNeurons();
@@ -134,39 +124,39 @@ public class VisualNEATNetworkPanel extends JComponent {
 		this.network = network;
 
 		this.nodeLocations.clear();
-		
-		if(network==null) {
+
+		if (network == null) {
 			return;
 		}
 		List<Neuron> inputNeurons = network.getInputNeurons();
 		List<Neuron> hiddenNeurons = network.getHiddenNeurons();
 		List<Neuron> outputNeurons = network.getOutputNeurons();
 
-		Random random = new Random(network.networkID*1000+500);
+		// Random random = new Random(network.networkID);
+		Random random = new Random(44324324);
 
 		for (int i = 0; i < inputNeurons.size(); i++) {
 			Neuron neuron = inputNeurons.get(i);
 			double x = 0.1;
-			double y = AKMath.scale(i, -0.5, inputNeurons.size(), 0, 1);
+			double y = AKMath.scale(i, -0.5, inputNeurons.size() - 0.5, 0, 1);
 			Tuple2D<Double, Double> location = new Tuple2D<>(x, y);
 			this.nodeLocations.put(neuron, location);
 		}
 		for (int i = 0; i < outputNeurons.size(); i++) {
 			Neuron neuron = outputNeurons.get(i);
 			double x = 0.9;
-			double y = AKMath.scale(i, -0.5, outputNeurons.size(), 0, 1);
+			double y = AKMath.scale(i, -0.5, outputNeurons.size() - 0.5, 0, 1);
 			Tuple2D<Double, Double> location = new Tuple2D<>(x, y);
 			this.nodeLocations.put(neuron, location);
 		}
 
 		for (int i = 0; i < hiddenNeurons.size(); i++) {
 			Neuron neuron = hiddenNeurons.get(i);
-			double x = AKMath.scale(i, -1.5, hiddenNeurons.size()+1, 0, 1);
-			double y = random.nextDouble();
+			double x = AKMath.scale(i, -1.5, hiddenNeurons.size() + 0.5, 0, 1);
+			double y = AKMath.scale(random.nextDouble(), 0, 1, 0.1, 0.9);
 			Tuple2D<Double, Double> location = new Tuple2D<>(x, y);
 			this.nodeLocations.put(neuron, location);
 		}
 	}
 
 }
-

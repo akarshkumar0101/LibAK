@@ -96,9 +96,8 @@ public class Species extends ArrayList<Genome> {
 			// the crossover function expects the highest fitness parent to be the object
 			// and the lowest as the argument
 			baby = trainer.crossover(parent1, parent2, neat);
-
 		}
-		baby = trainer.mutate(baby, neat);// mutate that baby brain
+		baby.cleanup();
 		return baby;
 	}
 

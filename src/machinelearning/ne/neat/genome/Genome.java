@@ -1,7 +1,12 @@
 package machinelearning.ne.neat.genome;
 
 import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+
+import data.tuple.Tuple2D;
 
 public class Genome extends ArrayList<ConnectionGene> {
 
@@ -24,6 +29,8 @@ public class Genome extends ArrayList<ConnectionGene> {
 
 	public static int GenomeIDGenerator = 0;
 	public final int genomeID;
+	
+	public static final Map<Integer,Genome> GENOMES = new HashMap<>(); 
 
 	public Genome(BaseTemplate baseTemplate, int numHiddenNodes) {
 		super();
@@ -32,6 +39,8 @@ public class Genome extends ArrayList<ConnectionGene> {
 		// this.nodeGenes = new ArrayList<>();
 
 		this.genomeID = Genome.GenomeIDGenerator++;
+		
+		GENOMES.put(genomeID, this);
 	}
 
 	public boolean hasConnection(int inputNodeID, int outputNodeID) {
@@ -40,6 +49,9 @@ public class Genome extends ArrayList<ConnectionGene> {
 				return true;
 		}
 		return false;
+	}
+	public Tuple2D<Integer,Integer> complexity() {
+		return new Tuple2D<>(this.numHiddenNodes, this.size());
 	}
 
 	public void calculateNumHiddenNodes() {
@@ -54,12 +66,26 @@ public class Genome extends ArrayList<ConnectionGene> {
 		this.numHiddenNodes = numHiddenNodes;
 	}
 
+	public void cleanup() {
+		this.sort(new Comparator<ConnectionGene>() {
+			@Override
+			public int compare(ConnectionGene o1, ConnectionGene o2) {
+				return o1.getInnovationNumber() - o2.getInnovationNumber();
+			}
+		});
+		this.calculateNumHiddenNodes();
+	}
+
 	/**
 	 * @return the id of the new hidden node
 	 */
 	public int addNewHiddenNode() {
 		int newNodeID = this.getNumTotalNodes();
+		if (!baseTemplate.hasBias()) {
+			newNodeID++;
+		}
 		this.numHiddenNodes++;
+		
 		return newNodeID;
 	}
 

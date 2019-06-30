@@ -41,9 +41,8 @@ public class NEAT implements Iterable<Genome> {
 		this.currentGeneration = 0;
 		this.currentInnovationNumber = 0;
 
-		
 		this.setNeatStats(this.trainer.calculateStatsForGeneration(this));
-		
+
 		this.populateRest();
 
 		this.calculateFitnesses();
@@ -59,12 +58,20 @@ public class NEAT implements Iterable<Genome> {
 		// kill off
 		this.killInSpecies(this.neatStats.getPercentPopulationToKill(this));
 
-		this.cleanupFitness();
+		this.saveFitnessMem();
 
 		// get offspring from cross
 		List<Genome> offspring = this.crossPopulation((int) (this.preferredPopulationSize * 0.75));
 		List<Genome> clonedOffspring = this.clonePopulation((int) (this.preferredPopulationSize * 0.25));
 		offspring.addAll(clonedOffspring);
+
+		offspring.sort(new Comparator<Genome>() {
+			@Override
+			public int compare(Genome o1, Genome o2) {
+				double ret = o1.fitness - o2.fitness;
+				return ret > 0 ? 1 : ret < 0 ? -1 : 0;
+			}
+		});
 
 		// mutate
 		this.mutatePopulation(offspring);
@@ -77,17 +84,45 @@ public class NEAT implements Iterable<Genome> {
 		this.putIntoSpecies(offspring);
 		this.populateRest();
 
+		for (Species spec : species) {
+			spec.assignNewRandomRepresentative();
+		}
+
 		this.killExtinctSpecies();
 
 		this.calculateFitnesses();
 
-		this.calculateAdjustedFitnesses();
+		this.calculateAdjustedFitnesses2();
 
 		this.sortSpeciesByFitness();
+		
+		if(species.size()>1) {
+			System.out.println("new species");
+		}
+		for(Species spec:species) {
+			if(spec.getRepresentative()==null) {
+				System.out.println("wtf");
+			}
+		}
+
+		species.sort(new Comparator<Species>() {
+			@Override
+			public int compare(Species o1, Species o2) {
+				return o1.getRepresentative().complexity().getA() - o2.getRepresentative().complexity().getA();
+			}
+		});
 
 		this.currentGeneration++;
 
 		this.generationalInnovations.clear();
+
+		System.out.println("\n\n\n\n");
+//		System.out.println("population size: " + this.size());
+		System.out.println("avg fitness: " + this.averageFitness());
+		System.out.println("best fitness: " + this.getFitnesses().get(this.bestGenome()));
+//		System.out.println("avg hidden nodes: " + this.averageHiddenNodes());
+//		System.out.println("num species: " + this.species.size());
+
 	}
 
 	/**
@@ -219,7 +254,8 @@ public class NEAT implements Iterable<Genome> {
 			int numOffspring = (int) (speciesSumAdjustedFitnesses * numberToProduce / totalSumAdjustedFitnesses);
 
 			for (int i = 0; i < numOffspring; i++) {
-				offspring.add(spec.giveBaby(this, this.trainer));
+				Genome baby = spec.giveBaby(this, this.trainer);
+				offspring.add(baby);
 			}
 		}
 
@@ -255,7 +291,7 @@ public class NEAT implements Iterable<Genome> {
 	private void mutatePopulation(List<Genome> population) {
 		for (int i = 0; i < population.size(); i++) {
 			Genome geno = population.get(i);
-
+			
 			if (AKRandom.randomChance(this.neatStats.getMutationProbability(geno, this))) {
 				Genome newgeno = this.trainer.mutate(geno, this);
 				population.remove(i);
@@ -278,7 +314,7 @@ public class NEAT implements Iterable<Genome> {
 		this.species.removeIf(spec -> spec.size() <= 1);
 	}
 
-	private void cleanupFitness() {
+	private void saveFitnessMem() {
 		this.fitnesses.entrySet().removeIf(e -> !this.contains(e.getKey()));
 	}
 
@@ -304,16 +340,23 @@ public class NEAT implements Iterable<Genome> {
 
 	private final HashMap<Tuple2D<Integer, Integer>, Integer> generationalInnovations = new HashMap<>();
 
+	// public int samemutation = 0, uniquemutation = 0;
+
 	public int accessAndIncrementCurrentInnovationNumberSmart(int inputNodeID, int outputNodeID) {
 		for (Tuple2D<Integer, Integer> structure : this.generationalInnovations.keySet()) {
-			if (structure.getA() == inputNodeID && structure.getB() == outputNodeID)
+			if (structure.getA() == inputNodeID && structure.getB() == outputNodeID) {
+//				System.out.println("found same mutation in generation!");
+//				samemutation++;
+//				System.out.println("distributed: " + this.generationalInnovations.get(structure));
 				// found structure already in generation
 				return this.generationalInnovations.get(structure);
+			}
 		}
 		int innov = this.currentInnovationNumber++;
 
 		this.generationalInnovations.put(new Tuple2D<>(inputNodeID, outputNodeID), innov);
-
+//		uniquemutation++;
+//		System.out.println("distributed: " + innov);
 		return innov;
 	}
 
@@ -376,10 +419,12 @@ public class NEAT implements Iterable<Genome> {
 
 		return false;
 	}
-	List<Iterable<Genome>> iterables;
+
+	
+
 	@Override
 	public Iterator<Genome> iterator() {
-		iterables = new LinkedList<>();
+		List<Iterable<Genome>> iterables = new LinkedList<>();
 		iterables.addAll(species);
 		return new CombinedIterator<Genome>(iterables);
 	}

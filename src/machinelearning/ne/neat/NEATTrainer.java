@@ -12,7 +12,13 @@ public interface NEATTrainer {
 
 	public abstract double calculateFitness(Genome a, NEAT neat);
 
-	public abstract Genome generateRandom(NEAT neat);
+	public default Genome generateRandom(NEAT neat) {
+		Genome geno = generateRandomGenome(neat);
+		geno.cleanup();
+		return geno;
+	}
+
+	public abstract Genome generateRandomGenome(NEAT neat);
 
 	public abstract NEATStats calculateStatsForGeneration(NEAT neat);
 
@@ -33,14 +39,23 @@ public interface NEATTrainer {
 				NEATTrainer.mutateConnectionGene(cg);
 			}
 		}
+
+		boolean probablyMutatedStructure = false;
+
 		// 8% of the time add a new connection
 		if (AKRandom.randomChance(0.08)) {
-			//this.mutateAddConnection(geno, neat);
+			this.mutateAddConnection(geno, neat);
+			probablyMutatedStructure = true;
 		}
 
 		// 2% of the time add a node
 		if (AKRandom.randomChance(0.02)) {
-			//this.mutateAddNode(geno, neat);
+			this.mutateAddNode(geno, neat);
+			probablyMutatedStructure = true;
+		}
+		if (probablyMutatedStructure) {
+			// need to cleanup because we don't know if the order of genes is correct or not
+			geno.cleanup();
 		}
 
 		return geno;
@@ -67,14 +82,21 @@ public interface NEATTrainer {
 		// try to get a unique new connection 100 times at most
 		for (int iterations = 0; outputNodeID == inputNodeID || geno.hasConnection(inputNodeID, outputNodeID)
 				|| !this.isValidConnection(inputNodeID, outputNodeID, geno, geno.getBaseTemplate()); iterations++) {
-			inputNodeID = (int) AKRandom.randomNumber(geno.getNumTotalNodes());
+
+			if (AKRandom.randomChance(0.5) && geno.getBaseTemplate().hasBias()) {
+				inputNodeID = 0;
+			} else {
+				inputNodeID = (int) AKRandom.randomNumber(geno.getNumTotalNodes() - 1) + 1;
+			}
+
 			outputNodeID = (int) AKRandom.randomNumber(geno.getNumTotalNodes());
 			if (iterations > 100)
 				return; // could not find new connection
 		}
 		// now we found a connection
 
-		int innovationNumber = neat.accessAndIncrementCurrentInnovationNumber();
+		// int innovationNumber = neat.accessAndIncrementCurrentInnovationNumber();
+		int innovationNumber = neat.accessAndIncrementCurrentInnovationNumberSmart(inputNodeID, outputNodeID);
 		double weightRandomStrengh = neat.getNeatStats().getWeightRandomizeStrengh(neat);
 		double connectionWeight = AKRandom.randomNumber(-weightRandomStrengh, weightRandomStrengh);
 
@@ -98,18 +120,20 @@ public interface NEATTrainer {
 
 		int newNodeID = geno.addNewHiddenNode();
 
-		ConnectionGene cg = new ConnectionGene(neat.accessAndIncrementCurrentInnovationNumber(), inputNodeID, newNodeID,
-				1, true);
+		int innovationNumber1 = neat.accessAndIncrementCurrentInnovationNumberSmart(inputNodeID, newNodeID);
+		int innovationNumber2 = neat.accessAndIncrementCurrentInnovationNumberSmart(newNodeID, outputNodeID);
+
+		ConnectionGene cg = new ConnectionGene(innovationNumber1, inputNodeID, newNodeID, 1, true);
 		geno.getConnectionGenes().add(cg);
 
-		ConnectionGene cg2 = new ConnectionGene(neat.accessAndIncrementCurrentInnovationNumber(), newNodeID,
-				outputNodeID, toSplitCg.getConnectionWeight(), true);
+		ConnectionGene cg2 = new ConnectionGene(innovationNumber2, newNodeID, outputNodeID,
+				toSplitCg.getConnectionWeight(), true);
 		geno.getConnectionGenes().add(cg2);
 	}
 
 	public static void mutateConnectionGene(ConnectionGene cg) {
 		// 10% of the time completely change the weight
-		if (AKRandom.randomChance(0.01)) {
+		if (AKRandom.randomChance(0.00)) {
 			cg.setConnectionWeight(AKRandom.randomNumber(-1, 1));
 		} else {// otherwise slightly change it
 			double weight = cg.getConnectionWeight();
@@ -181,6 +205,7 @@ public interface NEATTrainer {
 				i2++;
 			}
 		}
+		child.fitness = (a.fitness + b.fitness) / 2;
 
 		return child;
 	}
@@ -248,6 +273,9 @@ public interface NEATTrainer {
 		similarity += c1 * numExcess / N;
 		similarity += c2 * numDisjoint / N;
 		similarity += c3 * avgWeightDiff;
+
+		// System.out.println(similarity);
+		// System.out.println(a.complexity() +" "+ b.complexity());
 
 		return similarity;
 	}
