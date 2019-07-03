@@ -18,8 +18,10 @@ public class NeuralNetwork {
 
 	private boolean hasBias;
 
+	// uses input array when the constructor inputSource is null
+	private final double[] inputs;
 	private final InputSource inputSource;
-	
+
 	public final int networkID;
 
 	public NeuralNetwork(Genome geno, InputSource inputSource) {
@@ -27,19 +29,38 @@ public class NeuralNetwork {
 		this.outputNeurons = new ArrayList<>();
 		this.hiddenNeurons = new ArrayList<>();
 
-		this.inputSource = inputSource;
+		if (inputSource == null) {
+			inputs = new double[geno.getBaseTemplate().numInputNodes()];
+			this.inputSource = new InputSource() {
+				@Override
+				public double getInput(int inputIndex) {
+					return inputs[inputIndex];
+				}
+			};
+		} else {
+			this.inputSource = inputSource;
+			inputs = null;
+		}
 
 		this.buildFromGeno(geno);
-		
+
 		networkID = geno.genomeID;
+	}
+
+	public NeuralNetwork(Genome geno) {
+		this(geno, null);
 	}
 
 	public void calculate() {
 		this.invalidateAll();
 		for (Neuron outputNeuron : this.outputNeurons) {
 			outputNeuron.calculate();
-
 		}
+	}
+
+	public void calculate(double... inputs) {
+		System.arraycopy(inputs, 0, this.inputs, 0, this.inputs.length);
+		this.calculate();
 	}
 
 	public void invalidateAll() {
@@ -56,7 +77,7 @@ public class NeuralNetwork {
 
 	public void buildFromGeno(Genome geno) {
 		this.hasBias = geno.getBaseTemplate().hasBias();
-		
+
 		Map<Integer, Neuron> neurons = new HashMap<>();
 
 		if (geno.getBaseTemplate().hasBias()) {
@@ -92,7 +113,7 @@ public class NeuralNetwork {
 			neurons.put(i, hiddenNeuron);
 			this.hiddenNeurons.add(hiddenNeuron);
 		}
-		
+
 		for (ConnectionGene cg : geno.getConnectionGenes()) {
 			if (cg.isEnabled()) {
 				Neuron outputNeuron = neurons.get(cg.getOutputNodeID());
@@ -100,7 +121,6 @@ public class NeuralNetwork {
 				outputNeuron.addConnection(inputNeuron, cg.getConnectionWeight());
 			}
 		}
-
 	}
 
 	public boolean hasBias() {

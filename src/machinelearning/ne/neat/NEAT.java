@@ -7,6 +7,7 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Random;
 
 import data.tuple.Tuple2D;
 import machinelearning.ne.neat.genome.Genome;
@@ -52,6 +53,23 @@ public class NEAT implements Iterable<Genome> {
 		this.sortSpeciesByFitness();
 	}
 
+	public NEAT(int preferredPopulationSize, NEATTrainer trainer, boolean secondImpl) {
+		this.setTrainer(trainer);
+
+		this.species = new ArrayList<>();
+		this.fitnesses = new HashMap<>();
+
+		this.preferredPopulationSize = preferredPopulationSize;
+		this.currentGeneration = 0;
+		this.currentInnovationNumber = 0;
+
+		this.setNeatStats(this.trainer.calculateStatsForGeneration(this));
+
+		for (int i = 0; i < preferredPopulationSize; i++) {
+			population.add(trainer.generateRandom(this));
+		}
+	}
+
 	public void runGeneration() {
 		this.setNeatStats(this.trainer.calculateStatsForGeneration(this));
 
@@ -95,12 +113,12 @@ public class NEAT implements Iterable<Genome> {
 		this.calculateAdjustedFitnesses2();
 
 		this.sortSpeciesByFitness();
-		
-		if(species.size()>1) {
+
+		if (species.size() > 1) {
 			System.out.println("new species");
 		}
-		for(Species spec:species) {
-			if(spec.getRepresentative()==null) {
+		for (Species spec : species) {
+			if (spec.getRepresentative() == null) {
 				System.out.println("wtf");
 			}
 		}
@@ -118,11 +136,148 @@ public class NEAT implements Iterable<Genome> {
 
 		System.out.println("\n\n\n\n");
 //		System.out.println("population size: " + this.size());
-		System.out.println("avg fitness: " + this.averageFitness());
-		System.out.println("best fitness: " + this.getFitnesses().get(this.bestGenome()));
+//		System.out.println("avg fitness: " + this.averageFitness());
+//		System.out.println("best fitness: " + this.getFitnesses().get(this.bestGenome()));
 //		System.out.println("avg hidden nodes: " + this.averageHiddenNodes());
 //		System.out.println("num species: " + this.species.size());
 
+	}
+
+	List<Genome> population = new ArrayList<Genome>();
+	List<Genome> nextGenPopulation = new ArrayList<Genome>();
+	Map<Genome, Species> speciesMap = new HashMap<>();
+	
+	private Random random = new Random();
+
+	public void runGeneration2() {
+		for (Species spec : species) {
+			spec.assignNewRandomRepresentative();
+			spec.clear();
+			spec.totalAdjustedFitness = 0;
+		}
+
+		fitnesses.clear();
+		speciesMap.clear();
+		nextGenPopulation.clear();
+
+		// Place genomes into species
+		for (Genome geno : population) {
+			boolean foundSpecies = false;
+			for (Species spec : this.species) {
+				if (trainer.areSimilar(geno, spec.getRepresentative(), this)) {
+					// found it
+					spec.add(geno);
+					speciesMap.put(geno, spec);
+					foundSpecies = true;
+					break;
+				}
+			}
+			if (!foundSpecies) { // if there is no appropiate species for genome, make a new one
+				Species newSpecies = new Species(geno);
+				species.add(newSpecies);
+				speciesMap.put(geno, newSpecies);
+			}
+		}
+
+		// Remove unused species
+		Iterator<Species> iter = species.iterator();
+		while (iter.hasNext()) {
+			Species s = iter.next();
+			if (s.isEmpty()) {
+				iter.remove();
+			}
+		}
+		// Evaluate genomes and assign score
+		for (Genome geno : population) {
+			Species s = speciesMap.get(geno); // Get species of the genome
+
+			double fitness = trainer.calculateFitness(geno, this);
+			double adjustedFitness = fitness / s.size();
+
+			s.totalAdjustedFitness += adjustedFitness;
+			fitnesses.put(geno, new Tuple2D<>(fitness, adjustedFitness));
+			
+			geno.fitness = fitness;
+//			if (fitness > highestScore) {
+//				highestScore = fitness;
+//				fittestGenome = geno;
+//			}
+		}
+		// put best genomes from each species into next generation
+		for (Species spec : species) {
+			// sort species with adjusted fitness
+			spec.sort(new Comparator<Genome>() {
+				@Override
+				public int compare(Genome o1, Genome o2) {
+					double ret = fitnesses.get(o2).getB() - fitnesses.get(o1).getB();
+					return ret > 0 ? 1 : ret < 0 ? -1 : 0;
+				}
+			});
+			Genome bestInSpec = spec.get(0);
+
+			nextGenPopulation.add(bestInSpec);
+		}
+		
+		// Breed the rest of the genomes
+		while (nextGenPopulation.size() < preferredPopulationSize) { // replace removed genomes by randomly breeding
+			Species s = getRandomSpeciesBiasedAjdustedFitness(random);
+
+			Genome p1 = getRandomGenomeBiasedAdjustedFitness(s, random);
+			Genome p2 = getRandomGenomeBiasedAdjustedFitness(s, random);
+
+			Genome child;
+			//use adjusted fitness here
+			if (fitnesses.get(p1).getB() >= fitnesses.get(p2).getB()) {
+				child = trainer.crossover(p1, p2, this);
+			} else {
+				child = trainer.crossover(p2, p1, this);
+			}
+			child = trainer.mutate(child, this);
+			nextGenPopulation.add(child);
+		}
+
+		population = nextGenPopulation;
+		nextGenPopulation = new ArrayList<Genome>();
+
+	}
+	
+	/**
+	 * Selects a random species from the species list, where species with a higher total adjusted fitness have a higher chance of being selected
+	 */
+	private Species getRandomSpeciesBiasedAjdustedFitness(Random random) {
+		double completeWeight = 0.0;	// sum of probablities of selecting each species - selection is more probable for species with higher fitness
+		for (Species s : species) {
+            completeWeight += s.totalAdjustedFitness;
+		}
+        double r = Math.random() * completeWeight;
+        double countWeight = 0.0;
+        for (Species s : species) {
+            countWeight += s.totalAdjustedFitness;
+            if (countWeight >= r) {
+            	 return s;
+            }
+        }
+        throw new RuntimeException("Couldn't find a species... Number is species in total is "+species.size()+", and the total adjusted fitness is "+completeWeight);
+	}
+	
+	/**
+	 * Selects a random genome from the species chosen, where genomes with a higher adjusted fitness have a higher chance of being selected
+	 */
+	private Genome getRandomGenomeBiasedAdjustedFitness(Species spec, Random random) {
+		double completeWeight = 0.0;	// sum of probablities of selecting each genome - selection is more probable for genomes with higher fitness
+		//use adjusted fitness here
+		for (Genome geno : spec) {
+			completeWeight += fitnesses.get(geno).getB();
+		}
+        double r = Math.random() * completeWeight;
+        double countWeight = 0.0;
+        for (Genome geno : spec) {
+            countWeight += fitnesses.get(geno).getB();
+            if (countWeight >= r) {
+            	 return geno;
+            }
+        }
+        throw new RuntimeException("Couldn't find a genome... Number is genomes in selæected species is "+spec.size()+", and the total adjusted fitness is "+completeWeight);
 	}
 
 	/**
@@ -291,7 +446,7 @@ public class NEAT implements Iterable<Genome> {
 	private void mutatePopulation(List<Genome> population) {
 		for (int i = 0; i < population.size(); i++) {
 			Genome geno = population.get(i);
-			
+
 			if (AKRandom.randomChance(this.neatStats.getMutationProbability(geno, this))) {
 				Genome newgeno = this.trainer.mutate(geno, this);
 				population.remove(i);
@@ -419,8 +574,6 @@ public class NEAT implements Iterable<Genome> {
 
 		return false;
 	}
-
-	
 
 	@Override
 	public Iterator<Genome> iterator() {

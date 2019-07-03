@@ -10,6 +10,8 @@ public class Species extends ArrayList<Genome> {
 	private static final long serialVersionUID = -8114693581105898796L;
 
 	private Genome representative;
+	
+	public double totalAdjustedFitness;
 
 	public Species(Genome geno) {
 		this.representative = geno;

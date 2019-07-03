@@ -94,7 +94,7 @@ public class Genome extends ArrayList<ConnectionGene> {
 		if (id > baseTemplate.numInputNodes()) {
 			layer = 2;
 		}
-		if (id > baseTemplate.numInputNodes() + numHiddenNodes) {
+		if (id > baseTemplate.numInputNodes() + baseTemplate.numOutputNodes()) {
 			layer = 1;
 		}
 		return layer;
@@ -153,7 +153,7 @@ public class Genome extends ArrayList<ConnectionGene> {
 				genes.add(this.get(listI));
 				listI++;
 			} else {
-				genes.add(null);
+				//genes.add(null);
 			}
 
 		}

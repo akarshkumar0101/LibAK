@@ -65,7 +65,7 @@ public interface NEATTrainer {
 			BaseTemplate baseTemplate) {
 		int layer1 = geno.layer(inputNodeID), layer2 = geno.layer(outputNodeID);
 		boolean isRecurrentAllowed = false;
-
+		
 		if (layer2 == 0)
 			// input layer can't be output
 			return false;
@@ -133,7 +133,7 @@ public interface NEATTrainer {
 
 	public static void mutateConnectionGene(ConnectionGene cg) {
 		// 10% of the time completely change the weight
-		if (AKRandom.randomChance(0.00)) {
+		if (AKRandom.randomChance(0.05)) {
 			cg.setConnectionWeight(AKRandom.randomNumber(-1, 1));
 		} else {// otherwise slightly change it
 			double weight = cg.getConnectionWeight();
