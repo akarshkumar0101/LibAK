@@ -43,14 +43,14 @@ public interface NEATTrainer {
 		boolean probablyMutatedStructure = false;
 
 		// 8% of the time add a new connection
-		if (AKRandom.randomChance(0.08)) {
-			this.mutateAddConnection(geno, neat);
+		if (AKRandom.randomChance(0.05)) {
+			// this.mutateAddConnection(geno, neat);
 			probablyMutatedStructure = true;
 		}
 
 		// 2% of the time add a node
-		if (AKRandom.randomChance(0.02)) {
-			this.mutateAddNode(geno, neat);
+		if (AKRandom.randomChance(0.03)) {
+			// this.mutateAddNode(geno, neat);
 			probablyMutatedStructure = true;
 		}
 		if (probablyMutatedStructure) {
@@ -65,7 +65,7 @@ public interface NEATTrainer {
 			BaseTemplate baseTemplate) {
 		int layer1 = geno.layer(inputNodeID), layer2 = geno.layer(outputNodeID);
 		boolean isRecurrentAllowed = false;
-		
+
 		if (layer2 == 0)
 			// input layer can't be output
 			return false;
@@ -83,7 +83,7 @@ public interface NEATTrainer {
 		for (int iterations = 0; outputNodeID == inputNodeID || geno.hasConnection(inputNodeID, outputNodeID)
 				|| !this.isValidConnection(inputNodeID, outputNodeID, geno, geno.getBaseTemplate()); iterations++) {
 
-			if (AKRandom.randomChance(0.5) && geno.getBaseTemplate().hasBias()) {
+			if (AKRandom.randomChance(0.00) && geno.getBaseTemplate().hasBias()) {
 				inputNodeID = 0;
 			} else {
 				inputNodeID = (int) AKRandom.randomNumber(geno.getNumTotalNodes() - 1) + 1;
@@ -133,17 +133,17 @@ public interface NEATTrainer {
 
 	public static void mutateConnectionGene(ConnectionGene cg) {
 		// 10% of the time completely change the weight
-		if (AKRandom.randomChance(0.05)) {
-			cg.setConnectionWeight(AKRandom.randomNumber(-1, 1));
+		if (AKRandom.randomChance(0.10)) {
+			//cg.setConnectionWeight(AKRandom.randomNumber(-1, 1));
 		} else {// otherwise slightly change it
 			double weight = cg.getConnectionWeight();
 			weight += AKRandom.randomNumber(-0.02, 0.02);
 			// keep weight between bounds
 			if (weight > 1) {
-				//weight = 1;
+				// weight = 1;
 			}
 			if (weight < -1) {
-				//weight = -1;
+				// weight = -1;
 			}
 			cg.setConnectionWeight(weight);
 		}
@@ -223,7 +223,7 @@ public interface NEATTrainer {
 
 	public default boolean areSimilar(Genome a, Genome b, NEAT neat) {
 		return NEATTrainer.similarity(a, b, neat.getNeatStats().getC1(neat), neat.getNeatStats().getC2(neat),
-				neat.getNeatStats().getC3(neat)) < neat.getNeatStats().getDeltaThreshold(neat);
+				neat.getNeatStats().getC3(neat)) <= neat.getNeatStats().getDeltaThreshold(neat);
 	}
 
 	public static double similarity(Genome a, Genome b, double c1, double c2, double c3) {
