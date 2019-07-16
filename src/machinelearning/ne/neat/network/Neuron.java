@@ -24,8 +24,9 @@ public class Neuron {
 	}
 
 	public void calculate() {
-		if (this.calculated)
+		if (this.calculated) {
 			return;
+		}
 		this.calculated = true;
 		double input = 0;
 
@@ -49,8 +50,20 @@ public class Neuron {
 		return 1 / (1 + Math.exp(-input));
 	}
 
+	public static double steepSigmoidFunc(double input) {
+		return 1 / (1 + Math.exp(-5 * input));
+	}
+
+	public static double ReLU(double input) {
+		return Math.max(0.0, input);
+	}
+
+	public static double linearActivation(double input, double scale) {
+		return input * scale;
+	}
+
 	public void activationFunc() {
-		this.activation = Neuron.sigmoidFunc(this.activation);
+		this.activation = Neuron.steepSigmoidFunc(this.activation);
 	}
 
 	public double getActivation() {

@@ -10,16 +10,22 @@ public class FrameWrapper<C extends JComponent> extends EasyJFrame {
 
 	public FrameWrapper(String title, int width, int height, boolean closeOnX, boolean showImmediately) {
 		super(title, width, height, closeOnX, showImmediately);
-		component = null;
+		this.component = null;
 	}
 
 	public void setComponent(C comp) {
-		component = comp;
-		getContentPane().add(comp);
+		this.component = comp;
+		this.getContentPane().add(comp);
 	}
 
 	public C getComponent() {
-		return component;
+		return this.component;
 	}
 
+	public static <C extends JComponent> FrameWrapper<C> immediateShow(C ui) {
+		FrameWrapper<C> frame = new FrameWrapper<>("Testing", 800, 800, true, false);
+		frame.setComponent(ui);
+		frame.setVisible(true);
+		return frame;
+	}
 }

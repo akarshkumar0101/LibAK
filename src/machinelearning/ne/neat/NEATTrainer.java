@@ -3,7 +3,6 @@ package machinelearning.ne.neat;
 import java.util.ArrayList;
 import java.util.List;
 
-import data.tuple.Tuple2D;
 import machinelearning.ne.neat.genome.BaseTemplate;
 import machinelearning.ne.neat.genome.ConnectionGene;
 import machinelearning.ne.neat.genome.Genome;
@@ -11,81 +10,70 @@ import math.AKRandom;
 
 public interface NEATTrainer {
 
-	public abstract double calculateFitness(Genome a, NEAT neat);
+	public abstract double calculateFitness(Genome geno, NEAT neat);
 
-	public abstract Genome generateRandom(NEAT neat);
+	public default Genome generateRandom(NEAT neat) {
+		Genome geno = this.generateRandomGenome(neat);
+		geno.cleanup();
+		return geno;
+	}
 
-	public abstract NEATStats calculateStatsForGeneration(NEAT neat);
+	public abstract Genome generateRandomGenome(NEAT neat);
 
-	public default List<Double> calculateFitness(List<Genome> as, NEAT neat) {
-		List<Double> fitnesses = new ArrayList<>(as.size());
-		for (int i = 0; i < as.size(); i++) {
-			fitnesses.add(this.calculateFitness(as.get(i), neat));
+	public default List<Double> calculateFitness(List<Genome> genos, NEAT neat) {
+		List<Double> fitnesses = new ArrayList<>(genos.size());
+		for (int i = 0; i < genos.size(); i++) {
+			fitnesses.add(this.calculateFitness(genos.get(i), neat));
 		}
 		return fitnesses;
 	}
 
-	public default List<Tuple2D<Genome, Genome>> selectCrossoverPartners(List<Genome> population, NEAT neat,
-			int numOffspring) {
-		return this.selectCrossoverPartnersSUS(population, numOffspring, neat);
-	}
+	public default void mutate(Genome geno, NEAT neat) {
+		NEATStats stats = neat.getNeatStats();
 
-	// assumes population is sorted by fitness
-	public default List<Genome> killOff(List<Genome> population, int numToKill, NEAT neat) {
-		List<Genome> killed = new ArrayList<>(numToKill);
-		for (int i = population.size() - 1; i > population.size() - 1 - numToKill; i--) {
-			killed.add(population.get(i));
+		// 80% of the time mutate weights
+		if (AKRandom.randomChance(stats.getAlterAllWeightsProbability(neat))) {
+			for (ConnectionGene cg : geno.getConnectionGenes()) {
+				NEATTrainer.mutateConnectionGene(cg, neat);
+			}
 		}
-		return killed;
-	}
 
-	public default Genome crossover(Genome a, Genome b, NEAT neat) {
-		// return NEATTrainer.crossover(a, b);
-		return NEATTrainer.crossoverCBullet(a, b);
-	}
+		boolean probablyMutatedStructure = false;
 
-	public default Genome mutate(Genome geno, NEAT neat) {
-		if (true)
-			return this.mutateCBullet(geno, neat);
-
-		geno = geno.clone();
-
-		if (AKRandom.randomChance(neat.getNeatStats().getAddConnectionProbability(neat))) {
+		// 8% of the time add a new connection
+		if (AKRandom.randomChance(stats.getAddConnectionProbability(neat))) {
 			this.mutateAddConnection(geno, neat);
+			probablyMutatedStructure = true;
 		}
-		if (AKRandom.randomChance(neat.getNeatStats().getAddNodeProbability(neat))) {
+
+		// 2% of the time add a node
+		if (AKRandom.randomChance(stats.getAddNodeProbability(neat))) {
 			this.mutateAddNode(geno, neat);
+			probablyMutatedStructure = true;
 		}
-		if (AKRandom.randomChance(neat.getNeatStats().getWeightShiftProbability(neat))) {
-			this.mutateShiftWeight(geno, neat);
+		if (probablyMutatedStructure) {
+			// need to cleanup because we don't know if the order of genes is correct or not
+			geno.cleanup();
 		}
-		if (AKRandom.randomChance(neat.getNeatStats().getWeightRandomizeProbability(neat))) {
-			this.mutateRandomizeWeight(geno, neat);
-		}
-		if (AKRandom.randomChance(neat.getNeatStats().getToggleConnectionProbability(neat))) {
-			this.mutateToggleConnection(geno, neat);
-		}
-		return geno;
 	}
 
-	public default boolean isValidConnection(int inputNodeID, int outputNodeID, Genome geno,
-			BaseTemplate baseTemplate) {
-		int layer1 = 0, layer2 = 0;
-
-		if (inputNodeID > baseTemplate.numInputNodes()) {
-			layer1 = 1;
-		}
-		if (outputNodeID > baseTemplate.numInputNodes()) {
-			layer2 = 1;
-		}
-		if (inputNodeID > baseTemplate.numInputNodes() + geno.getNumHiddenNodes()) {
-			layer1 = 2;
-		}
-		if (outputNodeID > baseTemplate.numInputNodes() + geno.getNumHiddenNodes()) {
-			layer2 = 2;
-		}
-		if (layer1 == layer2)
+	public default boolean isValidConnection(int inputNodeID, int outputNodeID, Genome geno) {
+		if (inputNodeID == outputNodeID) {
 			return false;
+		}
+		if (geno.hasConnection(inputNodeID, outputNodeID) || geno.hasConnection(outputNodeID, inputNodeID)) {
+			return false;
+		}
+		int layer1 = geno.layerOf(inputNodeID), layer2 = geno.layerOf(outputNodeID);
+		boolean isRecurrentAllowed = false;
+
+		if (layer2 == 0) {
+			// input layer can't be output
+			return false;
+		}
+		if (!isRecurrentAllowed && layer2 < layer1) {
+			return false;
+		}
 
 		return true;
 	}
@@ -95,16 +83,23 @@ public interface NEATTrainer {
 		int outputNodeID = 0;
 
 		// try to get a unique new connection 100 times at most
-		for (int iterations = 0; outputNodeID == inputNodeID || geno.hasConnection(inputNodeID, outputNodeID)
-				|| !this.isValidConnection(inputNodeID, outputNodeID, geno, geno.getBaseTemplate()); iterations++) {
-			inputNodeID = (int) AKRandom.randomNumber(geno.getNumTotalNodes());
+		for (int iterations = 0; !this.isValidConnection(inputNodeID, outputNodeID, geno); iterations++) {
+
+			if (AKRandom.randomChance(0.00) && geno.getBaseTemplate().hasBias()) {
+				inputNodeID = 0;
+			} else {
+				inputNodeID = (int) AKRandom.randomNumber(geno.getNumTotalNodes() - 1) + 1;
+			}
+
 			outputNodeID = (int) AKRandom.randomNumber(geno.getNumTotalNodes());
-			if (iterations > 100)
+			if (iterations > 100) {
 				return; // could not find new connection
+			}
 		}
 		// now we found a connection
 
-		int innovationNumber = neat.accessAndIncrementCurrentInnovationNumber();
+		// int innovationNumber = neat.accessAndIncrementCurrentInnovationNumber();
+		int innovationNumber = neat.getInnovationNumberForConnectionMutation(inputNodeID, outputNodeID);
 		double weightRandomStrengh = neat.getNeatStats().getWeightRandomizeStrengh(neat);
 		double connectionWeight = AKRandom.randomNumber(-weightRandomStrengh, weightRandomStrengh);
 
@@ -118,8 +113,9 @@ public interface NEATTrainer {
 		for (int iterations = 0; toSplitCg == null || !toSplitCg.isEnabled(); iterations++) {
 			toSplitCg = geno.getConnectionGenes().get((int) AKRandom.randomNumber(geno.getConnectionGenes().size()));
 
-			if (iterations > 100) // could not find an enabled connection
+			if (iterations > 100) {
 				return;
+			}
 		}
 
 		toSplitCg.setEnabled(false); // disable it
@@ -128,92 +124,47 @@ public interface NEATTrainer {
 
 		int newNodeID = geno.addNewHiddenNode();
 
-		ConnectionGene cg = new ConnectionGene(neat.accessAndIncrementCurrentInnovationNumber(), inputNodeID, newNodeID,
-				1, true);
+		int innovationNumber1 = neat.getInnovationNumberForConnectionMutation(inputNodeID, newNodeID);
+		int innovationNumber2 = neat.getInnovationNumberForConnectionMutation(newNodeID, outputNodeID);
+
+		ConnectionGene cg = new ConnectionGene(innovationNumber1, inputNodeID, newNodeID, 1.0, true);
 		geno.getConnectionGenes().add(cg);
 
-		ConnectionGene cg2 = new ConnectionGene(neat.accessAndIncrementCurrentInnovationNumber(), newNodeID,
-				outputNodeID, toSplitCg.getConnectionWeight(), true);
+		ConnectionGene cg2 = new ConnectionGene(innovationNumber2, newNodeID, outputNodeID,
+				toSplitCg.getConnectionWeight(), true);
 		geno.getConnectionGenes().add(cg2);
 	}
 
-	public default void mutateShiftWeight(Genome geno, NEAT neat) {
-		ConnectionGene cg = null;
+	public static void mutateConnectionGene(ConnectionGene cg, NEAT neat) {
+		// 10% of the time completely change the weight
+		if (AKRandom.randomChance(neat.getNeatStats().getWeightRandomizeProbability(neat))) {
+			double strength = neat.getNeatStats().getWeightRandomizeStrengh(neat);
+			cg.setConnectionWeight(AKRandom.randomNumber(-strength, strength));
+		} else {// otherwise slightly change it
+			double weight = cg.getConnectionWeight();
 
-		for (int iterations = 0; cg == null || !cg.isEnabled(); iterations++) {
-			cg = geno.getConnectionGenes().get((int) AKRandom.randomNumber(geno.getConnectionGenes().size()));
-
-			if (iterations > 100) // could not find an enabled connection
-				return;
-		}
-		double connectionWeight = cg.getConnectionWeight();
-		double shiftStrength = neat.getNeatStats().getWeightShiftStrengh(neat);
-		connectionWeight += AKRandom.randomNumber(-shiftStrength, shiftStrength);
-		cg.setConnectionWeight(connectionWeight);
-	}
-
-	public default void mutateRandomizeWeight(Genome geno, NEAT neat) {
-		ConnectionGene cg = null;
-
-		for (int iterations = 0; cg == null || !cg.isEnabled(); iterations++) {
-			cg = geno.getConnectionGenes().get((int) AKRandom.randomNumber(geno.getConnectionGenes().size()));
-
-			if (iterations > 100) // could not find an enabled connection
-				return;
-		}
-		double randomizeStrength = neat.getNeatStats().getWeightRandomizeStrengh(neat);
-		cg.setConnectionWeight(AKRandom.randomNumber(-randomizeStrength, randomizeStrength));
-	}
-
-	public default void mutateToggleConnection(Genome geno, NEAT neat) {
-		ConnectionGene cg = geno.getConnectionGenes()
-				.get((int) AKRandom.randomNumber(geno.getConnectionGenes().size()));
-		cg.setEnabled(!cg.isEnabled());
-	}
-
-	public static Genome crossover(Genome a, Genome b) {
-		Genome child = new Genome(NEATTrainer.forgeBaseTemplates(a.getBaseTemplate(), b.getBaseTemplate()),
-				Math.max(a.getNumHiddenNodes(), b.getNumHiddenNodes()));
-
-		int i1 = 0;
-		int i2 = 0;
-		// List<Gene> childGenes = new ArrayList<>();
-		while (i1 < a.getConnectionGenes().size() || i2 < b.getConnectionGenes().size()) {
-			if (i1 >= a.getConnectionGenes().size()) {
-				child.getConnectionGenes().add(b.getConnectionGenes().get(i2).clone());
-				i2++;
-				continue;
+			double shiftStrength = neat.getNeatStats().getWeightShiftStrengh(neat);
+			weight += AKRandom.randomNumber(-shiftStrength, shiftStrength);
+			// keep weight between bounds
+			if (weight > 1) {
+				// weight = 1;
 			}
-			if (i2 >= b.getConnectionGenes().size()) {
-				child.getConnectionGenes().add(a.getConnectionGenes().get(i1).clone());
-				i1++;
-				continue;
+			if (weight < -1) {
+				// weight = -1;
 			}
-			ConnectionGene g1 = a.getConnectionGenes().get(i1);
-			ConnectionGene g2 = b.getConnectionGenes().get(i2);
-			if (g1.getInnovationNumber() == g2.getInnovationNumber()) {
-				ConnectionGene g = g1.clone();
-				g.setEnabled(g1.isEnabled() && g2.isEnabled());
-
-				child.getConnectionGenes().add(g);
-				i1++;
-				i2++;
-			} else if (g1.getInnovationNumber() < g2.getInnovationNumber()) {
-				// g1 is disjoint
-				child.getConnectionGenes().add(g1.clone());
-				i1++;
-			} else {
-				// g2 is disjoint
-				child.getConnectionGenes().add(g2.clone());
-				i2++;
-			}
+			cg.setConnectionWeight(weight);
 		}
 
-		return child;
+		// 0% of the time toggle a connection
+		if (AKRandom.randomChance(neat.getNeatStats().getToggleConnectionProbability(neat))) {
+			cg.setEnabled(!cg.isEnabled());
+		}
+
 	}
 
-	public static Genome crossoverCBullet(Genome a, Genome b) {
-		Genome child = new Genome(NEATTrainer.forgeBaseTemplates(a.getBaseTemplate(), b.getBaseTemplate()),
+	public default Genome crossover(Genome a, Genome b, NEAT neat) {
+		Genome child = new Genome(neat.getNewGenomeID(),
+				NEATTrainer.forgeBaseTemplates(a.getBaseTemplate(), b.getBaseTemplate()),
 				Math.max(a.getNumHiddenNodes(), b.getNumHiddenNodes()));
 
 		// assume a is more fit
@@ -235,11 +186,19 @@ public interface NEATTrainer {
 			}
 			ConnectionGene g1 = a.getConnectionGenes().get(i1);
 			ConnectionGene g2 = b.getConnectionGenes().get(i2);
+			// matching genes
 			if (g1.getInnovationNumber() == g2.getInnovationNumber()) {
 				// pick random parent for weight
 				ConnectionGene g = AKRandom.randomChance(0.5) ? g1.clone() : g2.clone();
-				// g is disabled if one or more of parents are disabled and 75% chance is met.
-				g.setEnabled(g1.isEnabled() && g2.isEnabled() || AKRandom.randomChance(.25));
+
+				if (g1.isEnabled() && g2.isEnabled()) {
+					g.setEnabled(true);
+				} else if (g1.isEnabled() || g2.isEnabled()) {
+					// g is disabled if one of parents are disabled and 75% chance is met.
+					g.setEnabled(AKRandom.randomChance(.25));
+				} else {
+					g.setEnabled(false);
+				}
 
 				child.getConnectionGenes().add(g);
 				i1++;
@@ -259,48 +218,10 @@ public interface NEATTrainer {
 		return child;
 	}
 
-	public static void mutateConnectionGene(ConnectionGene cg) {
-		if (AKRandom.randomChance(0.10)) {// 10% of the time completely change the weight
-			cg.setConnectionWeight(AKRandom.randomNumber(-1, 1));
-		} else {// otherwise slightly change it
-			double weight = cg.getConnectionWeight();
-			weight += AKRandom.randomNumber(-0.02, 0.02);
-			// keep weight between bounds
-			if (weight > 1) {
-				weight = 1;
-			}
-			if (weight < -1) {
-				weight = -1;
-			}
-			cg.setConnectionWeight(weight);
-		}
-	}
-
-	public default Genome mutateCBullet(Genome geno, NEAT neat) {
-		geno = geno.clone();
-
-		if (AKRandom.randomChance(0.80)) { // 80% of the time mutate weights
-			for (ConnectionGene cg : geno.getConnectionGenes()) {
-				NEATTrainer.mutateConnectionGene(cg);
-			}
-		}
-		// 8% of the time add a new connection
-		if (AKRandom.randomChance(0.08)) {
-			this.mutateAddConnection(geno, neat);
-		}
-
-		// 2% of the time add a node
-		if (AKRandom.randomChance(0.10)) {
-			this.mutateAddNode(geno, neat);
-		}
-
-		return geno;
-	}
-
 	public static BaseTemplate forgeBaseTemplates(BaseTemplate t1, BaseTemplate t2) {
-		if (t1 == t2 || t1.equals(t2))
+		if (t1 == t2 || t1.equals(t2)) {
 			return t1;
-		else {
+		} else {
 			BaseTemplate tforge = new BaseTemplate(t1.hasBias() || t2.hasBias(),
 					Math.max(t1.numInputNodes(), t1.numInputNodes()),
 					Math.max(t1.numOutputNodes(), t2.numOutputNodes()));
@@ -310,11 +231,14 @@ public interface NEATTrainer {
 
 	public default boolean areSimilar(Genome a, Genome b, NEAT neat) {
 		return NEATTrainer.similarity(a, b, neat.getNeatStats().getC1(neat), neat.getNeatStats().getC2(neat),
-				neat.getNeatStats().getC3(neat)) < neat.getNeatStats().getDeltaThreshold(neat);
+				neat.getNeatStats().getC3(neat)) <= neat.getNeatStats().getDeltaThreshold(neat);
 	}
 
 	public static double similarity(Genome a, Genome b, double c1, double c2, double c3) {
 		int N = Math.max(a.getConnectionGenes().size(), b.getConnectionGenes().size());
+		if (N < 20) {
+			N = 1;
+		}
 
 		int numExcess = 0;
 		int numDisjoint = 0;
@@ -361,88 +285,10 @@ public interface NEATTrainer {
 		similarity += c2 * numDisjoint / N;
 		similarity += c3 * avgWeightDiff;
 
+		// System.out.println(similarity);
+		// System.out.println(a.complexity() +" "+ b.complexity());
+
 		return similarity;
-	}
-
-	/**
-	 *
-	 * Uses raw fitness for individuals when choosing crossover partners (not
-	 * adjusted fitness)
-	 *
-	 * @param population
-	 * @param numCrossovers
-	 * @param neat
-	 * @return
-	 */
-	public default List<Tuple2D<Genome, Genome>> selectCrossoverPartnersSUS(List<Genome> population, int numCrossovers,
-			NEAT neat) {
-
-		double fitnessOffset = Double.MAX_VALUE;
-		for (Genome c : population) {
-
-			double fit = neat.getFitnesses().get(c).getA();
-			if (fit < fitnessOffset) {
-				fitnessOffset = fit;
-			}
-		}
-		if (fitnessOffset < 0) {
-			fitnessOffset *= -1;
-		} else {
-			fitnessOffset = 0;
-		}
-		fitnessOffset += 0.1;
-
-		// calculate total fitness
-		double totalFitness = 0;
-		for (Genome c : population) {
-			totalFitness += neat.getFitnesses().get(c).getA() + fitnessOffset;
-		}
-
-		List<Tuple2D<Genome, Genome>> partners = new ArrayList<>(numCrossovers);
-
-		// System.out.println(fitnessOffset);
-
-		for (int i = 0; i < numCrossovers; i++) {
-			double pick1Fit = AKRandom.randomNumber(0, totalFitness);
-			double pick2Fit = (pick1Fit + totalFitness / 2) % totalFitness;
-
-			Genome a = null, b = null;
-			double currentFitAt = 0;
-			for (Genome c : population) {
-				double fit = neat.getFitnesses().get(c).getA() + fitnessOffset;
-				currentFitAt += fit;
-
-				if (currentFitAt > pick1Fit && a == null) {
-					a = c;
-				}
-				if (currentFitAt > pick2Fit && b == null) {
-					b = c;
-				}
-				if (a != null && b != null) {
-					break;
-				}
-			}
-			if (a == null || b == null) {
-				System.out.println("rip");
-			}
-			partners.add(new Tuple2D<>(a, b));
-		}
-		return partners;
-
-	}
-
-	public default List<Tuple2D<Genome, Genome>> selectCrossoverPartnersRandomly(List<Genome> population,
-			int numCrossovers, NEAT neat) {
-
-		ArrayList<Tuple2D<Genome, Genome>> partners = new ArrayList<>(numCrossovers);
-
-		for (int i = 0; i < numCrossovers; i++) {
-			Genome a = population.get((int) AKRandom.randomNumber(0, population.size()));
-			Genome b = population.get((int) AKRandom.randomNumber(0, population.size()));
-			partners.add(new Tuple2D<>(a, b));
-		}
-
-		return partners;
 	}
 
 }

@@ -18,28 +18,44 @@ public class NeuralNetwork {
 
 	private boolean hasBias;
 
+	// uses input array when the constructor inputSource is null
+	private final double[] inputs;
 	private final InputSource inputSource;
-	
-	public final int networkID;
+
+	public final long networkID;
 
 	public NeuralNetwork(Genome geno, InputSource inputSource) {
 		this.inputNeurons = new ArrayList<>();
 		this.outputNeurons = new ArrayList<>();
 		this.hiddenNeurons = new ArrayList<>();
 
-		this.inputSource = inputSource;
+		if (inputSource == null) {
+			this.inputs = new double[geno.getBaseTemplate().numInputNodes()];
+			this.inputSource = inputIndex -> NeuralNetwork.this.inputs[inputIndex];
+		} else {
+			this.inputSource = inputSource;
+			this.inputs = null;
+		}
 
 		this.buildFromGeno(geno);
-		
-		networkID = geno.genomeID;
+
+		this.networkID = geno.ID;
+	}
+
+	public NeuralNetwork(Genome geno) {
+		this(geno, null);
 	}
 
 	public void calculate() {
 		this.invalidateAll();
 		for (Neuron outputNeuron : this.outputNeurons) {
 			outputNeuron.calculate();
-
 		}
+	}
+
+	public void calculate(double... inputs) {
+		System.arraycopy(inputs, 0, this.inputs, 0, this.inputs.length);
+		this.calculate();
 	}
 
 	public void invalidateAll() {
@@ -56,7 +72,7 @@ public class NeuralNetwork {
 
 	public void buildFromGeno(Genome geno) {
 		this.hasBias = geno.getBaseTemplate().hasBias();
-		
+
 		Map<Integer, Neuron> neurons = new HashMap<>();
 
 		if (geno.getBaseTemplate().hasBias()) {
@@ -93,14 +109,13 @@ public class NeuralNetwork {
 			this.hiddenNeurons.add(hiddenNeuron);
 		}
 
-		for (ConnectionGene connectionGene : geno.getConnectionGenes()) {
-			if (connectionGene.isEnabled()) {
-				Neuron outputNeuron = neurons.get(connectionGene.getOutputNodeID());
-				Neuron inputNeuron = neurons.get(connectionGene.getInputNodeID());
-				outputNeuron.addConnection(inputNeuron, connectionGene.getConnectionWeight());
+		for (ConnectionGene cg : geno.getConnectionGenes()) {
+			if (cg.isEnabled()) {
+				Neuron outputNeuron = neurons.get(cg.getOutputNodeID());
+				Neuron inputNeuron = neurons.get(cg.getInputNodeID());
+				outputNeuron.addConnection(inputNeuron, cg.getConnectionWeight());
 			}
 		}
-
 	}
 
 	public boolean hasBias() {
