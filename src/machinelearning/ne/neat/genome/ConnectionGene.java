@@ -1,15 +1,18 @@
 package machinelearning.ne.neat.genome;
 
-public class ConnectionGene extends Gene {
+public class ConnectionGene {
+	protected final int innovationNumber;
+
 	private final int inputNodeID;
 	private final int outputNodeID;
+
 	private double connectionWeight;
 
 	private boolean enabled;
 
 	public ConnectionGene(int innovationNumber, int inputNodeID, int outputNodeID, double connectionWeight,
 			boolean enabled) {
-		super(innovationNumber);
+		this.innovationNumber = innovationNumber;
 		this.inputNodeID = inputNodeID;
 		this.outputNodeID = outputNodeID;
 		this.connectionWeight = connectionWeight;
@@ -17,7 +20,7 @@ public class ConnectionGene extends Gene {
 	}
 
 	@Override
-	public ConnectionGene copy() {
+	public ConnectionGene clone() {
 		return new ConnectionGene(this.innovationNumber, this.inputNodeID, this.outputNodeID, this.connectionWeight,
 				this.enabled);
 	}
@@ -55,4 +58,9 @@ public class ConnectionGene extends Gene {
 	public void setEnabled(boolean enabled) {
 		this.enabled = enabled;
 	}
+
+	public int getInnovationNumber() {
+		return this.innovationNumber;
+	}
+
 }

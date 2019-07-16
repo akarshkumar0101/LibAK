@@ -9,11 +9,14 @@ import math.cas.Expression;
 public class Test {
 
 	public static void main(String[] args) {
+
+	}
+
+	public static void randomStuff() {
 		Map<Integer, Integer> factors = Factorization.factorize(9708131);
 		for (int key : factors.keySet()) {
 			System.out.println(key + "^" + factors.get(key));
 		}
-
 	}
 
 	public static void testCAS() {
