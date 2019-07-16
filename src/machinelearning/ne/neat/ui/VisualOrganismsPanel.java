@@ -1,4 +1,4 @@
-package machinelearning.ne.neat;
+package machinelearning.ne.neat.ui;
 
 import java.awt.Color;
 import java.awt.GridLayout;
@@ -7,15 +7,17 @@ import javax.swing.BorderFactory;
 import javax.swing.JComponent;
 import javax.swing.JPanel;
 
+import machinelearning.ne.neat.NEAT;
+import machinelearning.ne.neat.Species;
 import machinelearning.ne.neat.genome.Genome;
 
-public class VisualSpeciesPanel extends JComponent{
+public class VisualOrganismsPanel extends JComponent{
 	
 	private static final long serialVersionUID = -7911729139086160825L;
 
 	private final GridLayout gridLayout;
 	
-	public VisualSpeciesPanel(NEAT neat) {
+	public VisualOrganismsPanel(NEAT neat) {
 		gridLayout = new GridLayout(neat.species.size(), 1);
 		this.setLayout(gridLayout);
 		

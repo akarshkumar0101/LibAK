@@ -1,7 +1,6 @@
 package machinelearning.ne.neat;
 
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedList;
@@ -25,127 +24,144 @@ public class NEAT implements Iterable<Genome> {
 
 	private int preferredPopulationSize;
 
-	private int currentGeneration;
-
-	public int currentInnovationNumber = 0;
+	private int currentGenerationFinished;
 
 	private NEATStats neatStats;
 
-	List<Genome> population = null;
-	List<Genome> nextGenPopulation = new ArrayList<Genome>();
+	private List<Genome> population;
 
 	private Random random = new Random();
 
-	public NEAT(int preferredPopulationSize, NEATTrainer trainer) {
+	public NEAT(int preferredPopulationSize, NEATTrainer trainer, NEATStats neatStats) {
 		this.setTrainer(trainer);
 
 		this.species = new ArrayList<>();
 		this.fitnesses = new HashMap<>();
 
 		this.preferredPopulationSize = preferredPopulationSize;
-		this.currentGeneration = 0;
+		this.currentGenerationFinished = -1;
 		this.currentInnovationNumber = 0;
 
-		this.setNeatStats(this.trainer.calculateStatsForGeneration(this));
+		this.setNeatStats(neatStats);
 
+		this.population = null;
 	}
 
+	// runs the first generation (generation 0)
 	public void initialize() {
-		for (int i = 0; i < preferredPopulationSize; i++) {
-			nextGenPopulation.add(trainer.generateRandom(this));
+		this.population = new ArrayList<>(this.preferredPopulationSize);
+		for (int i = 0; i < this.preferredPopulationSize; i++) {
+			this.population.add(this.trainer.generateRandom(this));
 		}
-
+		this.calculateFitnesses(this.population);
+		this.putIntoSpecies(this.population);
 	}
 
-	// AVERAGE FITNESS OF A SPECIES IS SAME AS THE TOTAL ADJUSTED FITNESSES
+	// AVERAGE FITNESS OF A SPECIES IS SAME AS THE TOTAL (SUM OF) ADJUSTED FITNESSES
 
 	// this will get the current population, find fitness and sort population into
 	// species.
 	// then it will use the current population to calculate the next generation
 	// population.
 	public void runGeneration() {
-		population = nextGenPopulation;
-		nextGenPopulation = new ArrayList<Genome>();
-
-		// our generation is population variable
-		// previous generation is in species so clear them
-
-		for (Species spec : species) {
-			spec.assignNewRandomRepresentative();
-			spec.clear();
-		}
-
-		fitnesses.clear();
-
-		calculateFitnesses(population);
-
-		// Place genomes into species
-		putIntoSpecies(population);
 
 		// WE NEED TO NOT LET HALF OF THE SPECIES REPRODUCE, KILL THEM OFF OR SOMETHING
-
-		for (Species spec : species) {
+		for (Species spec : this.species) {
 			// sort by fitness
 			spec.sortByFitness(this);
-			
-			//kill off half
+
+			// kill off half
 			// midPoint is second mid index if size is even, and the real mid index when odd
-			int midPoint = spec.size() / 2;
+			int midPoint = spec.size() / 2 + 1;
 
 			for (int i = spec.size() - 1; i >= midPoint; i--) {
 				spec.remove(i);
 			}
 		}
 
-		// Remove unused empty species
-		removeExtinctSpecies();
+		// NOW CONSTRUCTING NEXT GEN
+
+		// NOTE: shouldn't you only extinct species if they have survived 15 generations
+		// and still not increased in size?
 
 		// put best genomes from each species into next generation
-		for (Species spec : species) {
-			Genome bestInSpec = spec.get(0);
-			nextGenPopulation.add(bestInSpec);
-		}
-		System.out.println("Copied "+nextGenPopulation.size()+" champions from previous species.");
 
-		int numOffspringNeeded = preferredPopulationSize - nextGenPopulation.size();
+		// this is the new population now.
+		this.assignNextGenerationFromSpecies();
+
+		// our generation is population variable
+		// previous generation is in species so clear them
+
+		for (Species spec : this.species) {
+			spec.assignNewRandomRepresentative();
+			spec.clear();
+		}
+
+		// this.fitnesses.clear();
+
+		this.calculateFitnesses(this.population);
+
+		// Place genomes into species
+		this.putIntoSpecies(this.population);
+
+		// Remove unused empty species
+		this.removeExtinctSpecies();
+
+		this.currentGenerationFinished++;
+		this.generationalInnovations.clear();
+
+	}
+
+	public void assignNextGenerationFromSpecies() {
+		this.population.clear();
+
+		for (Species spec : this.species) {
+			if (spec.size() > 5) {
+				Genome bestInSpec = spec.get(0);
+				this.population.add(bestInSpec);
+			}
+		}
+		System.out.println("Copied " + this.population.size() + " champions from previous species.");
+
+		int numOffspringNeeded = this.preferredPopulationSize - this.population.size();
 
 		// construct avgFitnessInSpecies
-		Map<Species, Double> avgFitnessInSpecies = new HashMap<>(species.size());
+		Map<Species, Double> avgFitnessInSpecies = new HashMap<>(this.species.size());
 		double sumAvgFitnessInSpecies = 0.0;
-		for (Species spec : species) {
+		for (Species spec : this.species) {
 			double avgFitness = spec.calculateAverageFitness(this);
 			avgFitnessInSpecies.put(spec, avgFitness);
 
 			sumAvgFitnessInSpecies += avgFitness;
 		}
-		
-		species.sort(new Comparator<Species>() {
-			@Override
-			public int compare(Species o1, Species o2) {
-				return (int) Math.signum(avgFitnessInSpecies.get(o2)-avgFitnessInSpecies.get(o1));
-			}
-		});
 
-		for (Species spec : species) {
-			double percentFitnessMakeup = (avgFitnessInSpecies.get(spec) / sumAvgFitnessInSpecies);
+		this.species.sort((o1, o2) -> (int) Math.signum(avgFitnessInSpecies.get(o2) - avgFitnessInSpecies.get(o1)));
+
+		for (Species spec : this.species) {
+			double percentFitnessMakeup = avgFitnessInSpecies.get(spec) / sumAvgFitnessInSpecies;
 
 			// round down always
 			int numOffspring = (int) (percentFitnessMakeup * numOffspringNeeded);
 
-			List<Genome> speciesOffSpring = getOffspringForSpecies(spec, numOffspring, avgFitnessInSpecies);
+			if (spec.lastGenerationOfIncrease < this.currentGenerationFinished + 15) {
+				// numOffspring = 0;
+			}
 
-			mutatePopulation(speciesOffSpring);
+			// System.out.println("Species " + spec.id + " had average fitness of " +
+			// avgFitnessInSpecies.get(spec)
+			// + " and was granted " + numOffspring + " children");
 
-			nextGenPopulation.addAll(speciesOffSpring);
+			List<Genome> speciesOffSpring = this.getOffspringForSpecies(spec, numOffspring, avgFitnessInSpecies);
+
+			this.mutatePopulation(speciesOffSpring);
+
+			this.population.addAll(speciesOffSpring);
 		}
 
 		// Fill rest of the population with brand new organisms
-		while (nextGenPopulation.size() < preferredPopulationSize) {
-			nextGenPopulation.add(trainer.generateRandom(this));
+		while (this.population.size() < this.preferredPopulationSize) {
+			this.population.add(this.trainer.generateRandom(this));
 		}
-
-		this.currentGeneration++;
-		this.generationalInnovations.clear();
 	}
 
 	public List<Genome> getOffspringForSpecies(Species spec, int numOffspring,
@@ -153,33 +169,39 @@ public class NEAT implements Iterable<Genome> {
 		List<Genome> offspring = new ArrayList<>(numOffspring);
 
 		// 25% of offspring are clones
-		int quarterAmount = (int) (0.25 * numOffspring);
-		for (int i = 0; i < quarterAmount; i++) {
-			Genome geno = getWeightedRandom(spec, fitnesses, random);
-			offspring.add(geno.clone());
-		}
+		// 75% of offspring are crosses
+		int crossAmount = (int) (this.neatStats.getPercentOffspringFromCrossover(this) * numOffspring);
 
-		for (int i = offspring.size(); i < numOffspring; i++) {
-			Genome p1 = getWeightedRandom(spec, fitnesses, random);
-			Genome p2 = null;
+		for (int i = 0; i < crossAmount; i++) {
+			Genome p1 = this.getWeightedRandom(spec, this.fitnesses, this.random);
+			p1 = spec.get((int) (Math.random() * spec.size()));
 
+			Species secondParentSpec = spec;
 			// interspecies mating rate
-			if (AKRandom.randomChance(0.001)) {
-				Species randomSpec = getWeightedRandom(species, avgFitnessInSpecies, random);
-				p2 = getWeightedRandom(randomSpec, fitnesses, random);
-			} else {
-				p2 = getWeightedRandom(spec, fitnesses, random);
+			if (AKRandom.randomChance(this.neatStats.getCrossoverInterspeciesProbability(this))) {
+				secondParentSpec = this.getWeightedRandom(this.species, avgFitnessInSpecies, this.random);
 			}
+			Genome p2 = this.getWeightedRandom(secondParentSpec, this.fitnesses, this.random);
+
+			p2 = spec.get((int) (Math.random() * spec.size()));
 
 			Genome child = null;
 			// use adjusted fitness here
-			if (fitnesses.get(p1) >= fitnesses.get(p2)) {
-				child = trainer.crossover(p1, p2, this);
+			if (this.fitnesses.get(p1) >= this.fitnesses.get(p2)) {
+				child = this.trainer.crossover(p1, p2, this);
 			} else {
-				child = trainer.crossover(p2, p1, this);
+				child = this.trainer.crossover(p2, p1, this);
 			}
-
 			offspring.add(child);
+		}
+
+		while (offspring.size() < numOffspring) {
+			Genome selected = this.getWeightedRandom(spec, this.fitnesses, this.random);
+
+			// geno = spec.get((int) (Math.random() * spec.size()));
+
+			Genome newGeno = new Genome(this.getNewGenomeID(), selected);
+			offspring.add(newGeno);
 		}
 
 		return offspring;
@@ -205,62 +227,48 @@ public class NEAT implements Iterable<Genome> {
 
 	private void putIntoSpecies(Genome geno) {
 		for (Species spec : this.species) {
-			if (trainer.areSimilar(geno, spec.getRepresentative(), this)) {
+			if (this.trainer.areSimilar(geno, spec.getRepresentative(), this)) {
 				// found it
 				spec.add(geno);
+				if (geno.fitness > spec.maxFit) {
+					spec.lastGenerationOfIncrease = this.currentGenerationFinished;
+					spec.maxFit = geno.fitness;
+				}
 				return;
 			}
 		}
-		this.species.add(new Species(geno));
+		Species newSpec = new Species(this.getNewSpeciesID(), geno);
+		newSpec.lastGenerationOfIncrease = this.currentGenerationFinished;
+		newSpec.maxFit = geno.fitness;
+		System.err.println("NEW SPECIES: " + newSpec.ID);
+		this.species.add(newSpec);
 	}
 
 	private void putIntoSpecies(List<Genome> genos) {
 		for (Genome geno : genos) {
-			putIntoSpecies(geno);
+			this.putIntoSpecies(geno);
+		}
+		for (Species spec : this.species) {
+			spec.age++;
 		}
 	}
 
-	/**
-	 * Kills of percentKilled percent in each species. It kills the worst of
-	 * species. Assumes that sortSpeciesByFitness() has been called prior to it.
-	 * Returns the number of genomes actually killed.
-	 *
-	 * @param percentKilled
-	 * @return
-	 */
-	private int killInSpecies(double percentKilled) {
-		int totalNumKilled = 0;
-		for (Species spec : this.species) {
-			int numToKill = (int) Math.floor((double) percentKilled * spec.size());
-
-			spec.sort(new Comparator<Genome>() {
-				@Override
-				public int compare(Genome o1, Genome o2) {
-					double ret = fitnesses.get(o2) - fitnesses.get(o1);
-					return ret > 0 ? 1 : ret < 0 ? -1 : 0;
-				}
-			});
-			int size = spec.size();
-			for (int i = spec.size() - 1; i > size - numToKill - 1; i--) {
-				spec.remove(i);
+	private void removeExtinctSpecies() {
+		this.species.removeIf(spec -> {
+			if (spec.isEmpty()) {
+				System.err.println("DEAD SPECIES: " + spec.ID);
 			}
-			if (!spec.contains(spec.getRepresentative())) {
-				spec.assignNewRandomRepresentative();
-			}
-
-			totalNumKilled += numToKill;
-		}
-
-		return totalNumKilled;
+			return spec.isEmpty();
+		});
 	}
 
 	private void calculateFitnesses(List<Genome> population) {
-		List<Double> fitnessesList = trainer.calculateFitness(population, this);
+		List<Double> fitnessesList = this.trainer.calculateFitness(population, this);
 
 		for (int i = 0; i < population.size(); i++) {
 			Genome geno = population.get(i);
 			double fitness = fitnessesList.get(i);
-			fitnesses.put(geno, fitness);
+			this.fitnesses.put(geno, fitness);
 			geno.fitness = fitness;
 
 //			if (fitness > highestScore) {
@@ -271,19 +279,11 @@ public class NEAT implements Iterable<Genome> {
 	}
 
 	private void mutatePopulation(List<Genome> population) {
-		for (int i = 0; i < population.size(); i++) {
-			Genome geno = population.get(i);
-
-			if (AKRandom.randomChance(this.neatStats.getMutationProbability(geno, this))) {
-				Genome newgeno = this.trainer.mutate(geno, this);
-				population.remove(i);
-				population.add(i, newgeno);
+		for (Genome geno : population) {
+			if (AKRandom.randomChance(this.neatStats.getMutationProbability(this))) {
+				this.trainer.mutate(geno, this);
 			}
 		}
-	}
-
-	private void removeExtinctSpecies() {
-		this.species.removeIf(spec -> spec.isEmpty());
 	}
 
 	public void setTrainer(NEATTrainer trainer) {
@@ -294,23 +294,24 @@ public class NEAT implements Iterable<Genome> {
 		return this.preferredPopulationSize;
 	}
 
+	public List<Genome> getPopulation() {
+		return this.population;
+	}
+
 	public Map<Genome, Double> getFitnesses() {
 		return this.fitnesses;
 	}
 
-	public int getCurrentGeneration() {
-		return this.currentGeneration;
+	public int getCurrentGenerationFinished() {
+		return this.currentGenerationFinished;
 	}
 
-	public int accessAndIncrementCurrentInnovationNumber() {
-		return this.currentInnovationNumber++;
-	}
-
+	public int currentInnovationNumber = 0;
 	private final HashMap<Tuple2D<Integer, Integer>, Integer> generationalInnovations = new HashMap<>();
 
 	// public int samemutation = 0, uniquemutation = 0;
 
-	public int accessAndIncrementCurrentInnovationNumberSmart(int inputNodeID, int outputNodeID) {
+	public int getInnovationNumberForConnectionMutation(int inputNodeID, int outputNodeID) {
 		for (Tuple2D<Integer, Integer> structure : this.generationalInnovations.keySet()) {
 			if (structure.getA() == inputNodeID && structure.getB() == outputNodeID) {
 //				System.out.println("found same mutation in generation!");
@@ -328,6 +329,18 @@ public class NEAT implements Iterable<Genome> {
 		return innov;
 	}
 
+	private long currentGenomeID = 0;
+
+	public long getNewGenomeID() {
+		return this.currentGenomeID++;
+	}
+
+	private long currentSpeciesID = 0;
+
+	public long getNewSpeciesID() {
+		return this.currentSpeciesID++;
+	}
+
 	public NEATStats getNeatStats() {
 		return this.neatStats;
 	}
@@ -338,7 +351,7 @@ public class NEAT implements Iterable<Genome> {
 
 	public int size() {
 		int size = 0;
-		for (Species spec : species) {
+		for (Species spec : this.species) {
 			size += spec.size();
 		}
 
@@ -346,7 +359,7 @@ public class NEAT implements Iterable<Genome> {
 	}
 
 	public boolean contains(Genome g) {
-		for (Species spec : species) {
+		for (Species spec : this.species) {
 			if (spec.contains(g)) {
 				return true;
 			}
@@ -358,7 +371,7 @@ public class NEAT implements Iterable<Genome> {
 	@Override
 	public Iterator<Genome> iterator() {
 		List<Iterable<Genome>> iterables = new LinkedList<>();
-		iterables.addAll(species);
-		return new CombinedIterator<Genome>(iterables);
+		iterables.addAll(this.species);
+		return new CombinedIterator<>(iterables);
 	}
 }

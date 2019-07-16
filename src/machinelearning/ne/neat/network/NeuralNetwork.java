@@ -22,7 +22,7 @@ public class NeuralNetwork {
 	private final double[] inputs;
 	private final InputSource inputSource;
 
-	public final int networkID;
+	public final long networkID;
 
 	public NeuralNetwork(Genome geno, InputSource inputSource) {
 		this.inputNeurons = new ArrayList<>();
@@ -30,21 +30,16 @@ public class NeuralNetwork {
 		this.hiddenNeurons = new ArrayList<>();
 
 		if (inputSource == null) {
-			inputs = new double[geno.getBaseTemplate().numInputNodes()];
-			this.inputSource = new InputSource() {
-				@Override
-				public double getInput(int inputIndex) {
-					return inputs[inputIndex];
-				}
-			};
+			this.inputs = new double[geno.getBaseTemplate().numInputNodes()];
+			this.inputSource = inputIndex -> NeuralNetwork.this.inputs[inputIndex];
 		} else {
 			this.inputSource = inputSource;
-			inputs = null;
+			this.inputs = null;
 		}
 
 		this.buildFromGeno(geno);
 
-		networkID = geno.genomeID;
+		this.networkID = geno.ID;
 	}
 
 	public NeuralNetwork(Genome geno) {

@@ -1,4 +1,4 @@
-package machinelearning.ne.neat;
+package machinelearning.ne.neat.ui;
 
 import java.awt.Color;
 import java.awt.Graphics;
@@ -28,12 +28,12 @@ public class VisualNEATNetworkPanel extends JComponent {
 	public VisualNEATNetworkPanel(NeuralNetwork network) {
 		this.nodeLocations = new HashMap<>();
 		this.setNetwork(network);
-		fitness = null;
+		this.fitness = null;
 	}
 
 	public VisualNEATNetworkPanel(Genome geno) {
 		this(new NeuralNetwork(geno, null));
-		fitness = geno.fitness;
+		this.fitness = geno.fitness;
 	}
 
 	private Tuple2D<Integer, Integer> locationOf(Neuron neuron) {
@@ -43,14 +43,15 @@ public class VisualNEATNetworkPanel extends JComponent {
 
 	@Override
 	public void paintComponent(Graphics g) {
-		if (this.network == null)
+		if (this.network == null) {
 			return;
+		}
 		g.setColor(Color.BLACK);
-		g.drawString("" + network.networkID, 0, 15);
+		g.drawString("" + this.network.networkID, 0, 15);
 
-		if (fitness != null) {
+		if (this.fitness != null) {
 			g.setColor(Color.MAGENTA);
-			g.drawString("" + fitness, 3 * this.getWidth() / 5, 15);
+			g.drawString("" + this.fitness, 3 * this.getWidth() / 5, 15);
 		}
 
 		for (int layer = 0; layer < 3; layer++) {
