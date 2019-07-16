@@ -2,6 +2,8 @@ package ui;
 
 import java.awt.Component;
 
+import javax.swing.JComponent;
+
 public class FrameWrapper<C extends Component> extends EasyJFrame {
 
 	private static final long serialVersionUID = -8344421539521111117L;
