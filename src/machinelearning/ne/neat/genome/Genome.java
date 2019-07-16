@@ -1,10 +1,7 @@
 package machinelearning.ne.neat.genome;
 
 import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 import data.tuple.Tuple2D;
 
@@ -12,9 +9,12 @@ public class Genome extends ArrayList<ConnectionGene> {
 
 	private static final long serialVersionUID = -5784317383291473781L;
 
-	// List<NodeGene> nodeGenes;
+	public final long ID;
 
 	private final BaseTemplate baseTemplate;
+
+	// private final List<ConnectionGene> genes;
+
 	// bias here is 0
 
 	// inputs are 1..numInputNodes
@@ -25,32 +25,46 @@ public class Genome extends ArrayList<ConnectionGene> {
 	// numInputNodes+numOutputNodes+1..numInputNodes+numOutputNodes+numHiddenNodes
 	private int numHiddenNodes;
 
-	public double fitness;
+	public double fitness = 0.0;
 
-	public static int GenomeIDGenerator = 0;
-	public final int genomeID;
-	
-	public static final Map<Integer,Genome> GENOMES = new HashMap<>(); 
+	/*
+	 * public Genome(BaseTemplate baseTemplate, int numHiddenNodes) { super();
+	 * this.baseTemplate = baseTemplate; this.numHiddenNodes = numHiddenNodes; //
+	 * this.nodeGenes = new ArrayList<>();
+	 *
+	 * this.ID = Genome.GenomeIDGenerator++; }
+	 */
 
-	public Genome(BaseTemplate baseTemplate, int numHiddenNodes) {
+	public Genome(long ID, BaseTemplate baseTemplate, int numHiddenNodes) {
 		super();
 		this.baseTemplate = baseTemplate;
 		this.numHiddenNodes = numHiddenNodes;
-		// this.nodeGenes = new ArrayList<>();
 
-		this.genomeID = Genome.GenomeIDGenerator++;
-		
-		GENOMES.put(genomeID, this);
+		this.ID = ID;
+		this.fitness = Double.NaN;
+	}
+
+	public Genome(long ID, Genome startingPoint) {
+		super();
+		this.baseTemplate = startingPoint.baseTemplate;
+		this.numHiddenNodes = startingPoint.numHiddenNodes;
+
+		this.addAll(startingPoint);
+
+		this.ID = ID;
+		this.fitness = Double.NaN;
 	}
 
 	public boolean hasConnection(int inputNodeID, int outputNodeID) {
 		for (ConnectionGene cg : this) {
-			if (cg.getInputNodeID() == inputNodeID && cg.getOutputNodeID() == outputNodeID)
+			if (cg.getInputNodeID() == inputNodeID && cg.getOutputNodeID() == outputNodeID) {
 				return true;
+			}
 		}
 		return false;
 	}
-	public Tuple2D<Integer,Integer> complexity() {
+
+	public Tuple2D<Integer, Integer> complexity() {
 		return new Tuple2D<>(this.numHiddenNodes, this.size());
 	}
 
@@ -61,18 +75,13 @@ public class Genome extends ArrayList<ConnectionGene> {
 			numHiddenNodes = Math.max(numHiddenNodes, cg.getInputNodeID());
 			numHiddenNodes = Math.max(numHiddenNodes, cg.getOutputNodeID());
 		}
-		numHiddenNodes -= (baseTemplate.numInputNodes() + baseTemplate.numOutputNodes());
+		numHiddenNodes -= this.baseTemplate.numInputNodes() + this.baseTemplate.numOutputNodes();
 
 		this.numHiddenNodes = numHiddenNodes;
 	}
 
 	public void cleanup() {
-		this.sort(new Comparator<ConnectionGene>() {
-			@Override
-			public int compare(ConnectionGene o1, ConnectionGene o2) {
-				return o1.getInnovationNumber() - o2.getInnovationNumber();
-			}
-		});
+		this.sort((o1, o2) -> o1.getInnovationNumber() - o2.getInnovationNumber());
 		this.calculateNumHiddenNodes();
 	}
 
@@ -81,70 +90,42 @@ public class Genome extends ArrayList<ConnectionGene> {
 	 */
 	public int addNewHiddenNode() {
 		int newNodeID = this.getNumTotalNodes();
-		if (!baseTemplate.hasBias()) {
+		if (!this.baseTemplate.hasBias()) {
 			newNodeID++;
 		}
 		this.numHiddenNodes++;
-		
+
 		return newNodeID;
 	}
 
-	public int layer(int id) {
+	public int layerOf(int nodeID) {
 		int layer = 0;
-		if (id > baseTemplate.numInputNodes()) {
+		if (nodeID > this.baseTemplate.numInputNodes()) {
 			layer = 2;
 		}
-		if (id > baseTemplate.numInputNodes() + numHiddenNodes) {
+		if (nodeID > this.baseTemplate.numInputNodes() + this.baseTemplate.numOutputNodes()) {
 			layer = 1;
 		}
 		return layer;
 	}
 
-	public String toStringReal() {
-		String str = "{\n";
-
-		if (this.baseTemplate.hasBias()) {
-			str += "\t{Node 0, Type: BIAS}\n";
-		}
-		for (int i = 1; i <= this.baseTemplate.numInputNodes(); i++) {
-			str += "\t{Node " + i + ", Type: INPUT}\n";
-		}
-		for (int i = this.baseTemplate.numInputNodes() + 1; i <= this.baseTemplate.numInputNodes()
-				+ this.baseTemplate.numOutputNodes(); i++) {
-			str += "\t{Node " + i + ", Type: OUTPUT}\n";
-		}
-		for (int i = this.baseTemplate.numInputNodes() + this.baseTemplate.numOutputNodes() + 1; i <= this.baseTemplate
-				.numInputNodes() + this.baseTemplate.numOutputNodes() + this.numHiddenNodes; i++) {
-			str += "\t{Node " + i + ", Type: HIDDEN}\n";
-		}
-
-		/*
-		 * for (NodeGene nodeGene : this.nodeGenes) { str += "\t" + nodeGene + "\n"; }
-		 */
-		for (ConnectionGene connectionGene : this) {
-			str += "\t" + connectionGene + "\n";
-		}
-
-		return str + "}";
-	}
-
-	public String toStringfffffff() {
-		String str = "{";
-
-		str += this.numHiddenNodes + " hidden, " + this.size() + " connections, fitness: " + this.fitness;
-
-		return str + "}";
-	}
-
 	@Override
 	public String toString() {
+		return this.toString(false, true);
+	}
+
+	public String toString(boolean crossOverString, boolean showGenes) {
 		String str = "";
 
-		str += "Genome ID: " + genomeID;
+		str += "Genome ID: " + this.ID + ", hidden nodes: " + this.numHiddenNodes + ", connections: " + this.size();
 		str += '\n';
 
-		str += "Fitness: " + fitness;
+		str += "Fitness: " + this.fitness;
 		str += '\n';
+
+		if (!showGenes) {
+			return str;
+		}
 
 		List<ConnectionGene> genes = new ArrayList<>();
 		int listI = 0;
@@ -153,7 +134,9 @@ public class Genome extends ArrayList<ConnectionGene> {
 				genes.add(this.get(listI));
 				listI++;
 			} else {
-				genes.add(null);
+				if (crossOverString) {
+					genes.add(null);
+				}
 			}
 
 		}
@@ -236,6 +219,45 @@ public class Genome extends ArrayList<ConnectionGene> {
 		return str;
 	}
 
+	public void insertGeneInOrder(ConnectionGene cg) {
+		int numHiddenNodes = this.numHiddenNodes;
+		numHiddenNodes = Math.max(numHiddenNodes, cg.getInputNodeID());
+		numHiddenNodes = Math.max(numHiddenNodes, cg.getOutputNodeID());
+
+		numHiddenNodes -= this.baseTemplate.numInputNodes() + this.baseTemplate.numOutputNodes();
+		this.numHiddenNodes = numHiddenNodes;
+
+		if (this.isEmpty()) {
+			this.add(cg);
+		} else {
+			// check before case
+			ConnectionGene first = this.get(0);
+			ConnectionGene last = this.get(this.size() - 1);
+			if (cg.getInnovationNumber() <= first.getInnovationNumber()) {
+				this.add(0, cg);
+			}
+			// check after case
+
+			else if (cg.getInnovationNumber() > last.getInnovationNumber()) {
+				this.add(this.size(), cg);
+			}
+
+			// in between case
+			else {
+				for (int i = 1; i < this.size(); i++) {
+					ConnectionGene before = this.get(i - 1);
+					ConnectionGene after = this.get(i);
+					if (cg.getInnovationNumber() > before.getInnovationNumber()
+							&& cg.getInnovationNumber() <= after.getInnovationNumber()) {
+						this.add(i, cg);
+						break;
+					}
+				}
+			}
+
+		}
+	}
+
 	public List<ConnectionGene> getConnectionGenes() {
 		return this;
 	}
@@ -257,13 +279,24 @@ public class Genome extends ArrayList<ConnectionGene> {
 				+ (this.baseTemplate.hasBias() ? 1 : 0);
 	}
 
+	/*
+	 * @Override public Genome clone() { Genome geno = new Genome(this.ID, this);
+	 *
+	 * geno.fitness = this.fitness; return geno; }
+	 */
+
 	@Override
-	public Genome clone() {
-		Genome geno = new Genome(this.baseTemplate, this.numHiddenNodes);
-		geno.fitness = this.fitness;
-		for (ConnectionGene cg : this) {
-			geno.add(cg.clone());
+	public boolean equals(Object another) {
+		if (another instanceof Genome) {
+			if (((Genome) another).ID == this.ID) {
+				return true;
+			}
 		}
-		return geno;
+		return false;
+	}
+
+	@Override
+	public int hashCode() {
+		return (int) this.ID;
 	}
 }

@@ -1,8 +1,5 @@
 package machinelearning.ne.neat;
 
-import data.tuple.Tuple2D;
-import machinelearning.ne.neat.genome.Genome;
-
 public class NEATStats {
 
 	// similarity parameters for species calculation
@@ -12,20 +9,26 @@ public class NEATStats {
 	public double deltaThreshold = 3.0;
 
 	// general GA parameters
-	public double percentPopulationToKill = 0.0;
-	public double crossoverProbability = 0.0;
+	public double percentPopulationToKill = 0.5;
+
+	public double percentOffspringFromCrossover = 0.75;
+
+	public double crossoverInterspeciesProbability = 0.001;
 
 	// mutation parameters
-	public double weightShiftStrengh = 0.0;
-	public double weightRandomizeStrengh = 0.0;
+	public double weightShiftStrengh = 0.02;
+	public double weightRandomizeStrengh = 2.0;
 
 	// mutation probabilities
-	public double mutationProbability = 0.0;
+	public double mutationProbability = 1.0;
 
-	public double addConnectionProbability = 0.01;
-	public double addNodeProbability = 0.1;
-	public double weightShiftProbability = 0.02;
-	public double weightRandomizeProbability = 0.02;
+	public double alterAllWeightsProbability = 0.8;
+
+	public double weightRandomizeProbability = 0.10;
+
+	public double addConnectionProbability = 0.05;// 0.05;
+	public double addNodeProbability = 0.01;// 0.03;
+
 	public double toggleConnectionProbability = 0.0;
 
 	public double getC1(NEAT neat) {
@@ -48,8 +51,12 @@ public class NEATStats {
 		return this.percentPopulationToKill;
 	}
 
-	public double getCrossoverProbability(Tuple2D<Genome, Genome> partners, NEAT neat) {
-		return this.crossoverProbability;
+	public double getPercentOffspringFromCrossover(NEAT neat) {
+		return this.percentOffspringFromCrossover;
+	}
+
+	public double getCrossoverInterspeciesProbability(NEAT neat) {
+		return this.crossoverInterspeciesProbability;
 	}
 
 	public double getWeightShiftStrengh(NEAT neat) {
@@ -60,8 +67,16 @@ public class NEATStats {
 		return this.weightRandomizeStrengh;
 	}
 
-	public double getMutationProbability(Genome a, NEAT neat) {
+	public double getMutationProbability(NEAT neat) {
 		return this.mutationProbability;
+	}
+
+	public double getAlterAllWeightsProbability(NEAT neat) {
+		return this.alterAllWeightsProbability;
+	}
+
+	public double getWeightRandomizeProbability(NEAT neat) {
+		return this.weightRandomizeProbability;
 	}
 
 	public double getAddConnectionProbability(NEAT neat) {
@@ -70,14 +85,6 @@ public class NEATStats {
 
 	public double getAddNodeProbability(NEAT neat) {
 		return this.addNodeProbability;
-	}
-
-	public double getWeightShiftProbability(NEAT neat) {
-		return this.weightShiftProbability;
-	}
-
-	public double getWeightRandomizeProbability(NEAT neat) {
-		return this.weightRandomizeProbability;
 	}
 
 	public double getToggleConnectionProbability(NEAT neat) {

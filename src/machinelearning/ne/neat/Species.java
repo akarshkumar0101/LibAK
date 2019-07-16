@@ -11,13 +11,23 @@ public class Species extends ArrayList<Genome> {
 
 	private Genome representative;
 
-	public Species(Genome geno) {
-		this.representative = geno;
-		this.add(geno);
+	public final long ID;
+
+	public int age = 0;
+	public int lastGenerationOfIncrease = 0;
+	double maxFit = -1;
+
+	public Species(long ID) {
+		this(ID, null);
 	}
 
-	public boolean isExtinct() {
-		return this.size() <= 1;
+	public Species(long ID, Genome geno) {
+		super();
+		this.ID = ID;
+		this.representative = geno;
+		if (geno != null) {
+			this.add(geno);
+		}
 	}
 
 	public void assignNewRandomRepresentative() {
@@ -34,6 +44,22 @@ public class Species extends ArrayList<Genome> {
 
 	public void setRepresentative(Genome representative) {
 		this.representative = representative;
+	}
+
+	public double calculateAverageFitness(NEAT neat) {
+		double avg = 0;
+		for (Genome geno : this) {
+			avg += neat.getFitnesses().get(geno);
+		}
+		avg /= this.size();
+		return avg;
+	}
+
+	public void sortByFitness(NEAT neat) {
+		this.sort((o1, o2) -> {
+			double ret = neat.getFitnesses().get(o2) - neat.getFitnesses().get(o1);
+			return (int) Math.signum(ret);
+		});
 	}
 
 	public Genome selectGenome() {
@@ -86,7 +112,8 @@ public class Species extends ArrayList<Genome> {
 		Genome baby;
 		if (AKRandom.randomChance(0.25)) {// 25% of the time there is no crossover and the child is simply a clone of a
 											// random(ish) player
-			baby = this.selectGenome().clone();
+			Genome selected = this.selectGenome();
+			baby = new Genome(neat.getNewGenomeID(), selected);
 		} else {// 75% of the time do crossover
 
 			// get 2 random(ish) parents
@@ -99,6 +126,31 @@ public class Species extends ArrayList<Genome> {
 		}
 		baby.cleanup();
 		return baby;
+	}
+
+	@Override
+	public Species clone() {
+		Species spec = new Species(this.ID);
+		for (Genome geno : this) {
+			spec.add(geno);
+		}
+		spec.setRepresentative(this.getRepresentative());
+		return spec;
+	}
+
+	@Override
+	public boolean equals(Object another) {
+		if (another instanceof Species) {
+			if (((Species) another).ID == this.ID) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	@Override
+	public int hashCode() {
+		return (int) this.ID;
 	}
 
 }
