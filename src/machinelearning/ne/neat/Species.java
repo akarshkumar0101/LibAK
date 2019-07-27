@@ -3,11 +3,12 @@ package machinelearning.ne.neat;
 import java.util.ArrayList;
 
 import machinelearning.ne.neat.genome.Genome;
-import math.AKRandom;
 
 public class Species extends ArrayList<Genome> {
 
 	private static final long serialVersionUID = -8114693581105898796L;
+
+	private final NEAT neat;
 
 	private Genome representative;
 
@@ -17,23 +18,24 @@ public class Species extends ArrayList<Genome> {
 	public int lastGenerationOfIncrease = 0;
 	double maxFit = -1;
 
-	public Species(long ID) {
-		this(ID, null);
+	public Species(long ID, NEAT neat) {
+		this(ID, null, neat);
 	}
 
-	public Species(long ID, Genome geno) {
+	public Species(long ID, Genome geno, NEAT neat) {
 		super();
 		this.ID = ID;
 		this.representative = geno;
 		if (geno != null) {
 			this.add(geno);
 		}
+		this.neat = neat;
 	}
 
 	public void assignNewRandomRepresentative() {
 		this.representative = null;
 		if (!this.isEmpty()) {
-			int randIndex = (int) (Math.random() * this.size());
+			int randIndex = (int) this.neat.akRandom.nextRandomNumber(this.size());
 			this.representative = this.get(randIndex);
 		}
 	}
@@ -85,7 +87,7 @@ public class Species extends ArrayList<Genome> {
 
 		// System.out.println(fitnessOffset);
 
-		double pick1Fit = AKRandom.randomNumber(0, totalFitness);
+		double pick1Fit = this.neat.akRandom.nextRandomNumber(0, totalFitness);
 
 		Genome a = null;
 		double currentFitAt = 0;
@@ -104,14 +106,15 @@ public class Species extends ArrayList<Genome> {
 		return a;
 	}
 
-	public Genome selectGenomeRandom() {
-		return this.get((int) (Math.random() * this.size()));
+	public Genome selectRandomGenome() {
+		return this.get((int) this.neat.akRandom.nextRandomNumber(this.size()));
 	}
 
 	public Genome giveBaby(NEAT neat, NEATTrainer trainer) {
 		Genome baby;
-		if (AKRandom.randomChance(0.25)) {// 25% of the time there is no crossover and the child is simply a clone of a
-											// random(ish) player
+		if (neat.akRandom.nextRandomChance(0.25)) {// 25% of the time there is no crossover and the child is simply a
+													// clone of a
+			// random(ish) player
 			Genome selected = this.selectGenome();
 			baby = new Genome(neat.getNewGenomeID(), selected);
 		} else {// 75% of the time do crossover
@@ -130,7 +133,7 @@ public class Species extends ArrayList<Genome> {
 
 	@Override
 	public Species clone() {
-		Species spec = new Species(this.ID);
+		Species spec = new Species(this.ID, this.neat);
 		for (Genome geno : this) {
 			spec.add(geno);
 		}

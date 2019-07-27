@@ -3,15 +3,12 @@ package machinelearning.ne.neat;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.Random;
 
 import data.tuple.Tuple2D;
 import machinelearning.ne.neat.genome.Genome;
 import math.AKRandom;
-import util.CombinedIterator;
 
 public class NEAT implements Iterable<Genome> {
 
@@ -30,7 +27,7 @@ public class NEAT implements Iterable<Genome> {
 
 	private List<Genome> population;
 
-	private Random random = new Random();
+	public final AKRandom akRandom = new AKRandom(100);
 
 	public NEAT(int preferredPopulationSize, NEATTrainer trainer, NEATStats neatStats) {
 		this.setTrainer(trainer);
@@ -153,7 +150,7 @@ public class NEAT implements Iterable<Genome> {
 
 			List<Genome> speciesOffSpring = this.getOffspringForSpecies(spec, numOffspring, avgFitnessInSpecies);
 
-			this.mutatePopulation(speciesOffSpring);
+			this.mutateGroup(speciesOffSpring);
 
 			this.population.addAll(speciesOffSpring);
 		}
@@ -173,17 +170,17 @@ public class NEAT implements Iterable<Genome> {
 		int crossAmount = (int) (this.neatStats.getPercentOffspringFromCrossover(this) * numOffspring);
 
 		for (int i = 0; i < crossAmount; i++) {
-			Genome p1 = this.getWeightedRandom(spec, this.fitnesses, this.random);
-			p1 = spec.get((int) (Math.random() * spec.size()));
+			Genome p1 = this.getWeightedRandom(spec, this.fitnesses);
+			p1 = spec.get((int) this.akRandom.nextRandomNumber(spec.size()));
 
 			Species secondParentSpec = spec;
 			// interspecies mating rate
-			if (AKRandom.randomChance(this.neatStats.getCrossoverInterspeciesProbability(this))) {
-				secondParentSpec = this.getWeightedRandom(this.species, avgFitnessInSpecies, this.random);
+			if (this.akRandom.nextRandomChance(this.neatStats.getCrossoverInterspeciesProbability(this))) {
+				secondParentSpec = this.getWeightedRandom(this.species, avgFitnessInSpecies);
 			}
-			Genome p2 = this.getWeightedRandom(secondParentSpec, this.fitnesses, this.random);
+			Genome p2 = this.getWeightedRandom(secondParentSpec, this.fitnesses);
 
-			p2 = spec.get((int) (Math.random() * spec.size()));
+			p2 = spec.get((int) this.akRandom.nextRandomNumber(spec.size()));
 
 			Genome child = null;
 			// use adjusted fitness here
@@ -196,9 +193,9 @@ public class NEAT implements Iterable<Genome> {
 		}
 
 		while (offspring.size() < numOffspring) {
-			Genome selected = this.getWeightedRandom(spec, this.fitnesses, this.random);
+			Genome selected = this.getWeightedRandom(spec, this.fitnesses);
 
-			// geno = spec.get((int) (Math.random() * spec.size()));
+			// geno = spec.get((int) akRandom.nextRandomNumber(spec.size()));
 
 			Genome newGeno = new Genome(this.getNewGenomeID(), selected);
 			offspring.add(newGeno);
@@ -207,13 +204,13 @@ public class NEAT implements Iterable<Genome> {
 		return offspring;
 	}
 
-	private <T> T getWeightedRandom(List<T> list, Map<T, Double> fitnesses, Random random) {
+	private <T> T getWeightedRandom(List<T> list, Map<T, Double> fitnesses) {
 		double totalWeight = 0.0;
 		for (T t : list) {
 			totalWeight += fitnesses.get(t);
 		}
 
-		double rand = AKRandom.randomNumber(totalWeight, random);
+		double rand = this.akRandom.nextRandomNumber(totalWeight);
 
 		double currentWeight = 0.0;
 		for (T t : list) {
@@ -237,7 +234,7 @@ public class NEAT implements Iterable<Genome> {
 				return;
 			}
 		}
-		Species newSpec = new Species(this.getNewSpeciesID(), geno);
+		Species newSpec = new Species(this.getNewSpeciesID(), geno, this);
 		newSpec.lastGenerationOfIncrease = this.currentGenerationFinished;
 		newSpec.maxFit = geno.fitness;
 		System.err.println("NEW SPECIES: " + newSpec.ID);
@@ -278,9 +275,9 @@ public class NEAT implements Iterable<Genome> {
 		}
 	}
 
-	private void mutatePopulation(List<Genome> population) {
-		for (Genome geno : population) {
-			if (AKRandom.randomChance(this.neatStats.getMutationProbability(this))) {
+	private void mutateGroup(List<Genome> group) {
+		for (Genome geno : group) {
+			if (this.akRandom.nextRandomChance(this.neatStats.getMutationProbability(this))) {
 				this.trainer.mutate(geno, this);
 			}
 		}
@@ -370,8 +367,10 @@ public class NEAT implements Iterable<Genome> {
 
 	@Override
 	public Iterator<Genome> iterator() {
-		List<Iterable<Genome>> iterables = new LinkedList<>();
-		iterables.addAll(this.species);
-		return new CombinedIterator<>(iterables);
+		// List<Iterable<Genome>> iterables = new LinkedList<>();
+		// iterables.addAll(this.species);
+		// return new CombinedIterator<>(iterables);
+
+		return this.population.iterator();
 	}
 }
